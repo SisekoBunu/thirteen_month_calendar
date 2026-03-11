@@ -12,6 +12,8 @@ class SelectedDayPanel extends StatelessWidget {
   final List<String> holidays;
   final VoidCallback onClose;
   final VoidCallback onAddEntry;
+  final void Function(CalendarEntry entry) onEditEntry;
+  final void Function(String id) onDeleteEntry;
 
   const SelectedDayPanel({
     super.key,
@@ -24,6 +26,8 @@ class SelectedDayPanel extends StatelessWidget {
     required this.holidays,
     required this.onClose,
     required this.onAddEntry,
+    required this.onEditEntry,
+    required this.onDeleteEntry,
   });
 
   @override
@@ -139,49 +143,150 @@ class SelectedDayPanel extends StatelessWidget {
             'Holidays: ${holidays.length}',
             style: const TextStyle(fontSize: 15, color: Colors.black87),
           ),
-          if (entries.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            const Text(
-              'Latest items',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
+          const SizedBox(height: 14),
+          const Text(
+            'Entries',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
             ),
-            const SizedBox(height: 8),
-            ...entries.take(3).map(
-              (entry) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  '• ${_typeLabel(entry.type)}: ${entry.title}',
-                  style: const TextStyle(fontSize: 14, color: Colors.black87),
+          ),
+          const SizedBox(height: 10),
+          if (entries.isEmpty)
+            _placeholderCard('No entries yet')
+          else
+            ...entries.map(
+              (entry) => Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF7F7F7),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE3E3E3)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(top: 4),
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: _typeColor(entry.type),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _typeLabel(entry.type),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            entry.title,
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          if (entry.timeLabel.trim().isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              entry.timeLabel,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.black54,
+                              ),
+                            ),
+                          ],
+                          if (entry.details.trim().isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              entry.details,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => onEditEntry(entry),
+                      tooltip: 'Edit',
+                      icon: const Icon(Icons.edit_outlined),
+                    ),
+                    IconButton(
+                      onPressed: () => onDeleteEntry(entry.id),
+                      tooltip: 'Delete',
+                      icon: const Icon(Icons.delete_outline),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
-          if (holidays.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            const Text(
-              'Holidays & observances',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
-              ),
+          const SizedBox(height: 18),
+          const Text(
+            'Holidays & Observances',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Colors.black87,
             ),
-            const SizedBox(height: 8),
+          ),
+          const SizedBox(height: 10),
+          if (holidays.isEmpty)
+            _placeholderCard('No holidays yet')
+          else
             ...holidays.map(
-              (holiday) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
+              (holiday) => Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF7F7F7),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE3E3E3)),
+                ),
                 child: Text(
-                  '• $holiday',
-                  style: const TextStyle(fontSize: 14, color: Colors.black87),
+                  holiday,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: Colors.black87,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
-          ],
         ],
+      ),
+    );
+  }
+
+  Widget _placeholderCard(String text) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F7F7),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE3E3E3)),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 15,
+          color: Colors.black87,
+        ),
       ),
     );
   }
@@ -194,6 +299,17 @@ class SelectedDayPanel extends StatelessWidget {
         return 'Reminder';
       case CalendarEntryType.alarm:
         return 'Alarm';
+    }
+  }
+
+  static Color _typeColor(CalendarEntryType type) {
+    switch (type) {
+      case CalendarEntryType.event:
+        return Colors.blue;
+      case CalendarEntryType.reminder:
+        return Colors.orange;
+      case CalendarEntryType.alarm:
+        return Colors.red;
     }
   }
 }

@@ -74,8 +74,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return today.day ?? 1;
   }
 
-  CalendarLogic? get _noopCalendarLogic => null;
-
   int? get _todayDayForCurrentMonthView {
     final today = CalendarLogic.currentCustomDate();
 
@@ -104,14 +102,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return null;
-  }
-
-  bool get _isFinalMonthOfYear {
-    return currentMonthIndex == CalendarConfig.monthNames.length - 1;
-  }
-
-  bool get _hasLeapDayThisYear {
-    return CalendarLogic.isCustomLeapYear(currentYear);
   }
 
   void jumpToToday() {
@@ -143,125 +133,6 @@ class _HomeScreenState extends State<HomeScreen> {
       selectedDay = null;
       previewDay = null;
     });
-  }
-
-  void _showSpecialDayDialog({
-    required String title,
-    required String description,
-  }) {
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(description),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildSpecialDayCard({
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Tooltip(
-      message: subtitle,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Container(
-          width: double.infinity,
-          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.grey.shade300),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              const Icon(Icons.event_available, size: 22),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.chevron_right),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildYearEndSpecialDaysSection() {
-    if (!_isFinalMonthOfYear) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      children: [
-        _buildSpecialDayCard(
-          title: 'Year Day',
-          subtitle: 'An extra day at the end of the year.',
-          onTap: () {
-            _showSpecialDayDialog(
-              title: 'Year Day',
-              description:
-                  'Year Day is the extra day that closes out the year after March 28. '
-                  'It helps keep the calendar lined up properly before the new year begins again in April.',
-            );
-          },
-        ),
-        if (_hasLeapDayThisYear)
-          _buildSpecialDayCard(
-            title: 'Leap Day',
-            subtitle: 'Similar to leap day in the Gregorian calendar.',
-            onTap: () {
-              _showSpecialDayDialog(
-                title: 'Leap Day',
-                description:
-                    'Leap Day appears in some years to keep the calendar in step over time. '
-                    'It works a lot like leap day in the Gregorian calendar, just placed at the end of this calendar year.',
-              );
-            },
-          ),
-      ],
-    );
   }
 
   String _dateKey({
@@ -406,6 +277,90 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         entriesByDate.putIfAbsent(key, () => []);
         entriesByDate[key] = [newEntry, ...entriesByDate[key]!];
+      });
+    }
+  }
+
+  Future<void> _showEditEntryDialog(CalendarEntry entry) async {
+    if (selectedDay == null) return;
+
+    final titleController = TextEditingController(text: entry.title);
+    final detailsController = TextEditingController(text: entry.details);
+    final timeController = TextEditingController(text: entry.timeLabel);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        final title = _typeLabel(entry.type);
+        return AlertDialog(
+          title: Text('Edit $title'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: InputDecoration(
+                    labelText: '$title title',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: timeController,
+                  decoration: const InputDecoration(
+                    labelText: 'Time (optional)',
+                    hintText: 'e.g. 09:00',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: detailsController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Details (optional)',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (titleController.text.trim().isEmpty) return;
+                Navigator.of(context).pop(true);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      final key = _dateKey(
+        culture: currentCulture,
+        year: currentYear,
+        monthIndex: currentMonthIndex,
+        day: selectedDay!,
+      );
+
+      final updatedEntry = CalendarEntry(
+        id: entry.id,
+        type: entry.type,
+        title: titleController.text.trim(),
+        details: detailsController.text.trim(),
+        timeLabel: timeController.text.trim(),
+      );
+
+      setState(() {
+        final current = entriesByDate[key] ?? [];
+        entriesByDate[key] = current
+            .map((e) => e.id == entry.id ? updatedEntry : e)
+            .toList();
       });
     }
   }
@@ -789,18 +744,23 @@ class _HomeScreenState extends State<HomeScreen> {
                             onDayTap: handleDayTap,
                           ),
                         ),
-                        _buildYearEndSpecialDaysSection(),
                         if (selectedDay != null)
-                          SelectedDayPanel(
-                            monthName: currentMonthName,
-                            year: int.tryParse(displayedYearLabel) ?? currentYear,
-                            culture: currentCulture,
-                            monthIndex: currentMonthIndex,
-                            selectedDay: selectedDay,
-                            entries: currentEntries,
-                            holidays: currentHolidays,
-                            onAddEntry: _showAddEntryTypeDialog,
-                            onClose: clearSelectedDay,
+                          Flexible(
+                            child: SingleChildScrollView(
+                              child: SelectedDayPanel(
+                                monthName: currentMonthName,
+                                year: int.tryParse(displayedYearLabel) ?? currentYear,
+                                culture: currentCulture,
+                                monthIndex: currentMonthIndex,
+                                selectedDay: selectedDay,
+                                entries: currentEntries,
+                                holidays: currentHolidays,
+                                onAddEntry: _showAddEntryTypeDialog,
+                                onClose: clearSelectedDay,
+                                onEditEntry: _showEditEntryDialog,
+                                onDeleteEntry: _deleteEntry,
+                              ),
+                            ),
                           ),
                       ],
                     )
@@ -831,6 +791,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               holidays: currentHolidays,
                               onClose: closeDayView,
                               onAddEntry: _showAddEntryTypeDialog,
+                              onEditEntry: _showEditEntryDialog,
                               onDeleteEntry: _deleteEntry,
                             )
                           : const SizedBox.shrink(),

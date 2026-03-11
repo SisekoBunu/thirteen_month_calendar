@@ -10,6 +10,7 @@ class DayViewPanel extends StatelessWidget {
   final List<String> holidays;
   final VoidCallback onClose;
   final VoidCallback onAddEntry;
+  final void Function(CalendarEntry entry) onEditEntry;
   final void Function(String id) onDeleteEntry;
 
   const DayViewPanel({
@@ -22,6 +23,7 @@ class DayViewPanel extends StatelessWidget {
     required this.holidays,
     required this.onClose,
     required this.onAddEntry,
+    required this.onEditEntry,
     required this.onDeleteEntry,
   });
 
@@ -183,6 +185,11 @@ class DayViewPanel extends StatelessWidget {
                                   ],
                                 ],
                               ),
+                            ),
+                            IconButton(
+                              onPressed: () => onEditEntry(entry),
+                              tooltip: 'Edit',
+                              icon: const Icon(Icons.edit_outlined),
                             ),
                             IconButton(
                               onPressed: () => onDeleteEntry(entry.id),
