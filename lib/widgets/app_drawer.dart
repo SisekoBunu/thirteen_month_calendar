@@ -43,6 +43,9 @@ class AppDrawer extends StatelessWidget {
                       'About / How the app works',
                       style: TextStyle(fontSize: 20),
                     ),
+                    subtitle: const Text(
+                      'Learn how the 13-month system works',
+                    ),
                     onTap: () {
                       Navigator.of(context).pop();
                       Navigator.of(context).push(
