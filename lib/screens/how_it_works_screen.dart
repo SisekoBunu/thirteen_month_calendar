@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class AboutScreen extends StatelessWidget {
-  const AboutScreen({super.key});
+class HowItWorksScreen extends StatelessWidget {
+  const HowItWorksScreen({super.key});
 
   Widget _infoCard({
     required String title,
@@ -62,7 +62,7 @@ class AboutScreen extends StatelessWidget {
                   const Expanded(
                     child: Center(
                       child: Text(
-                        'About',
+                        'How It Works',
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.w700,
@@ -78,38 +78,45 @@ class AboutScreen extends StatelessWidget {
                 child: ListView(
                   children: [
                     _infoCard(
-                      title: 'What this app is',
+                      title: 'Views',
                       paragraphs: const [
-                        '13 Month Calendar is an alternative way of looking at the year. It is built around a fixed 13-month structure with 28 days in each month, and the year begins in April.',
-                        'The purpose of the app is not to replace the Gregorian calendar, but to give users another structured way to view time while still keeping the normal calendar available as a reference.',
+                        'Month View shows one month at a time. Year View shows the full year at a glance. Day View gives more room to focus on one date and the things attached to it.',
+                        'The Today button takes you back to the current month and highlights today without forcing the details panel open.',
                       ],
                     ),
                     _infoCard(
-                      title: 'What makes it different',
+                      title: 'Selecting a day',
                       paragraphs: const [
-                        'This calendar includes 13 months instead of 12, and it places Sol between August and September. The result is a cleaner and more regular month pattern.',
-                        'The app also allows different culture profiles so that holidays, observances, and date logic can be presented in different ways over time.',
+                        'When you tap a day in Month View, the selected day panel opens below the grid. That panel shows the chosen date, its Gregorian equivalent, entries for that day, and any holidays or observances.',
+                        'You can also manage entries from that smaller panel without needing to switch to the full Day View every time.',
                       ],
                     ),
                     _infoCard(
-                      title: 'Gregorian is still the reference',
+                      title: 'Entries',
                       paragraphs: const [
-                        'The Gregorian calendar is still used as the normal civil reference. That is why the app can show Gregorian equivalent dates and explain how holidays line up with what people already know.',
-                        'This makes the calendar easier to use in real life without losing the benefits of the 13-month layout.',
+                        'You can add three kinds of entries: events, reminders, and alarms. Entries can include a title, optional time, and optional details.',
+                        'Entries can also be edited or deleted after they are created.',
                       ],
                     ),
                     _infoCard(
-                      title: 'Background date correction',
+                      title: 'Gregorian equivalent and holidays',
                       paragraphs: const [
-                        'To keep the calendar aligned properly over time, year correction is handled in the background by the app. This keeps the interface cleaner while still keeping the calendar math accurate.',
-                        'That means users can enjoy the fixed-month structure without needing to see every correction detail directly in the calendar view.',
+                        'When you select a date, the app shows the Gregorian equivalent so you can understand where that date falls in the normal civil calendar.',
+                        'Holiday and observance information can also be shown, along with how those dates line up relative to the Gregorian calendar.',
                       ],
                     ),
                     _infoCard(
-                      title: 'Where the app is going',
+                      title: 'Culture and country selection',
                       paragraphs: const [
-                        'Gregorian is being completed first so it can serve as the base model. After that, additional culture profiles and calendar systems can be added in a more stable and organized way.',
-                        'The long-term goal is to make the app both practical and educational, while still staying simple enough to use every day.',
+                        'The culture selector is used to switch the calendar profile. Gregorian is the current main profile being completed first.',
+                        'For Gregorian, the country selector lets you switch between different holiday packs such as International, South Africa, USA, United Kingdom, Canada, Australia, and New Zealand.',
+                      ],
+                    ),
+                    _infoCard(
+                      title: 'Current development stage',
+                      paragraphs: const [
+                        'The app already supports the core calendar views, entries, Gregorian reference, and country-based holiday packs.',
+                        'More features such as recurring events, search, notifications, and additional culture systems are planned next.',
                       ],
                     ),
                   ],

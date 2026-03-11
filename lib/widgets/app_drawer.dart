@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/about_screen.dart';
+import '../screens/how_it_works_screen.dart';
 import '../screens/donate_screen.dart';
 
 class AppDrawer extends StatelessWidget {
@@ -40,17 +41,35 @@ class AppDrawer extends StatelessWidget {
                   ListTile(
                     leading: const Icon(Icons.info_outline),
                     title: const Text(
-                      'About / How the app works',
+                      'About this app',
                       style: TextStyle(fontSize: 20),
                     ),
                     subtitle: const Text(
-                      'Learn how the 13-month system works',
+                      'What the app is and why it exists',
                     ),
                     onTap: () {
                       Navigator.of(context).pop();
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const AboutScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.menu_book_outlined),
+                    title: const Text(
+                      'How the app works',
+                      style: TextStyle(fontSize: 20),
+                    ),
+                    subtitle: const Text(
+                      'Views, entries, dates, and navigation',
+                    ),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const HowItWorksScreen(),
                         ),
                       );
                     },
