@@ -19,19 +19,19 @@ class HolidayEngine {
 
   static int? _nominalGregorianMonthForCustomMonthIndex(int customMonthIndex) {
     const monthMap = <int, int?>{
-      0: 4,   // April
-      1: 5,   // May
-      2: 6,   // June
-      3: 7,   // July
-      4: 8,   // August
-      5: null, // Sol
-      6: 9,   // September
-      7: 10,  // October
-      8: 11,  // November
-      9: 12,  // December
-      10: 1,  // January
-      11: 2,  // February
-      12: 3,  // March
+      0: 4,
+      1: 5,
+      2: 6,
+      3: 7,
+      4: 8,
+      5: null,
+      6: 9,
+      7: 10,
+      8: 11,
+      9: 12,
+      10: 1,
+      11: 2,
+      12: 3,
     };
 
     return monthMap[customMonthIndex];
@@ -122,7 +122,6 @@ class HolidayEngine {
           default:
             return const [];
         }
-
       case 'USA':
         switch (customYear) {
           case 2026:
@@ -156,13 +155,12 @@ class HolidayEngine {
               HolidayItem(name: "Easter", gregorianMonth: 3, gregorianDay: 28, profile: 'Gregorian', country: 'USA'),
               HolidayItem(name: "Mother's Day", gregorianMonth: 5, gregorianDay: 9, profile: 'Gregorian', country: 'USA'),
               HolidayItem(name: "Father's Day", gregorianMonth: 6, gregorianDay: 20, profile: 'Gregorian', country: 'USA'),
-              HolidayItem(name: "Election Day", gregorianMonth: 11, gregorianDay: 2, profile: 'Gregorian', country: 'USA'),
+              HolidayItem(name: "ElectionDay", gregorianMonth: 11, gregorianDay: 2, profile: 'Gregorian', country: 'USA'),
               HolidayItem(name: "Pearl Harbor Remembrance Day", gregorianMonth: 12, gregorianDay: 7, profile: 'Gregorian', country: 'USA'),
             ];
           default:
             return const [];
         }
-
       case 'Canada':
         switch (customYear) {
           case 2026:
@@ -179,7 +177,6 @@ class HolidayEngine {
           default:
             return const [];
         }
-
       case 'United Kingdom':
         switch (customYear) {
           case 2026:
@@ -205,7 +202,6 @@ class HolidayEngine {
           default:
             return const [];
         }
-
       case 'Australia':
         switch (customYear) {
           case 2026:
@@ -226,7 +222,6 @@ class HolidayEngine {
           default:
             return const [];
         }
-
       case 'New Zealand':
         switch (customYear) {
           case 2026:
@@ -259,7 +254,6 @@ class HolidayEngine {
           default:
             return const [];
         }
-
       case 'International':
       default:
         return const [];
@@ -340,14 +334,10 @@ class HolidayEngine {
     }
 
     final selectedGregorian = CalendarLogic.convertCustomToGregorianDate(
-      customYear: customYear,
-      customMonthIndex: customMonthIndex,
-      customDay: customDay,
+      customYear,
+      customMonthIndex,
+      customDay,
     );
-
-    if (selectedGregorian == null) {
-      return [];
-    }
 
     final holidays = getGregorianHolidays(
       country: country,

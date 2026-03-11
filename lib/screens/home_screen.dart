@@ -24,6 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int currentMonthIndex = 0;
   int currentYear = 2025;
   int? selectedDay;
+  int? previewDay;
   String currentCulture = 'Gregorian';
   String? currentCountry = 'International';
   CalendarViewMode currentViewMode = CalendarViewMode.month;
@@ -65,11 +66,44 @@ class _HomeScreenState extends State<HomeScreen> {
     currentYear = today.year;
     currentMonthIndex = today.monthIndex ?? 12;
     selectedDay = null;
+    previewDay = null;
   }
 
   int _currentSystemDayForNow() {
     final today = CalendarLogic.currentCustomDate();
     return today.day ?? 1;
+  }
+
+  CalendarLogic? get _noopCalendarLogic => null;
+
+  int? get _todayDayForCurrentMonthView {
+    final today = CalendarLogic.currentCustomDate();
+
+    if (today.year == currentYear && today.monthIndex == currentMonthIndex) {
+      return today.day;
+    }
+
+    return null;
+  }
+
+  int? get _todayMonthIndexForCurrentYearView {
+    final today = CalendarLogic.currentCustomDate();
+
+    if (today.year == currentYear) {
+      return today.monthIndex;
+    }
+
+    return null;
+  }
+
+  int? get _todayDayForCurrentYearView {
+    final today = CalendarLogic.currentCustomDate();
+
+    if (today.year == currentYear) {
+      return today.day;
+    }
+
+    return null;
   }
 
   bool get _isFinalMonthOfYear {
@@ -86,8 +120,28 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       currentYear = today.year;
       currentMonthIndex = today.monthIndex ?? 12;
-      selectedDay = today.day;
+      selectedDay = null;
+      previewDay = today.day;
       currentViewMode = CalendarViewMode.month;
+    });
+  }
+
+  void handleDayTap(int day) {
+    setState(() {
+      if (selectedDay == day) {
+        selectedDay = null;
+        previewDay = null;
+      } else {
+        selectedDay = day;
+        previewDay = day;
+      }
+    });
+  }
+
+  void clearSelectedDay() {
+    setState(() {
+      selectedDay = null;
+      previewDay = null;
     });
   }
 
@@ -117,55 +171,58 @@ class _HomeScreenState extends State<HomeScreen> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade50,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.grey.shade300),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.event_available, size: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ],
+    return Tooltip(
+      message: subtitle,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          width: double.infinity,
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: Colors.grey.shade300),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right),
-          ],
+            ],
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.event_available, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
         ),
       ),
     );
@@ -180,27 +237,26 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         _buildSpecialDayCard(
           title: 'Year Day',
-          subtitle: 'Occurs after March 28 and sits outside the normal week/month grid.',
+          subtitle: 'An extra day at the end of the year.',
           onTap: () {
             _showSpecialDayDialog(
               title: 'Year Day',
               description:
-                  'Year Day happens after March 28 at the end of the custom year. '
-                  'It does not belong to any month and does not belong to the normal weekly cycle. '
-                  'After Year Day, the calendar resets into the new year.',
+                  'Year Day is the extra day that closes out the year after March 28. '
+                  'It helps keep the calendar lined up properly before the new year begins again in April.',
             );
           },
         ),
         if (_hasLeapDayThisYear)
           _buildSpecialDayCard(
             title: 'Leap Day',
-            subtitle: 'Extra correction day after Year Day in leap years only.',
+            subtitle: 'Similar to leap day in the Gregorian calendar.',
             onTap: () {
               _showSpecialDayDialog(
                 title: 'Leap Day',
                 description:
-                    'Leap Day appears only in leap years, after Year Day and before the next April 1. '
-                    'It is outside the normal month/week grid and exists to keep the custom calendar aligned correctly over time.',
+                    'Leap Day appears in some years to keep the calendar in step over time. '
+                    'It works a lot like leap day in the Gregorian calendar, just placed at the end of this calendar year.',
               );
             },
           ),
@@ -391,6 +447,7 @@ class _HomeScreenState extends State<HomeScreen> {
           currentMonthIndex++;
         }
         selectedDay = null;
+        previewDay = null;
       } else if (currentViewMode == CalendarViewMode.year) {
         currentYear++;
       } else if (currentViewMode == CalendarViewMode.day) {
@@ -407,6 +464,7 @@ class _HomeScreenState extends State<HomeScreen> {
             currentMonthIndex++;
           }
         }
+        previewDay = selectedDay;
       }
     });
   }
@@ -421,6 +479,7 @@ class _HomeScreenState extends State<HomeScreen> {
           currentMonthIndex--;
         }
         selectedDay = null;
+        previewDay = null;
       } else if (currentViewMode == CalendarViewMode.year) {
         currentYear--;
       } else if (currentViewMode == CalendarViewMode.day) {
@@ -437,6 +496,7 @@ class _HomeScreenState extends State<HomeScreen> {
             currentMonthIndex--;
           }
         }
+        previewDay = selectedDay;
       }
     });
   }
@@ -469,7 +529,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       if (mode == CalendarViewMode.day) {
         previousViewMode = currentViewMode;
-        selectedDay ??= _currentSystemDayForNow();
+        selectedDay ??= previewDay ?? _currentSystemDayForNow();
       }
       currentViewMode = mode;
     });
@@ -483,28 +543,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void handleDayTap(int day) {
-    setState(() {
-      if (selectedDay == day) {
-        selectedDay = null;
-      } else {
-        selectedDay = day;
-      }
-    });
-  }
-
-  void clearSelectedDay() {
-    setState(() {
-      selectedDay = null;
-    });
-  }
-
   void handleYearViewDayTap(int monthIndex, int day) {
     setState(() {
-      previousViewMode = CalendarViewMode.year;
       currentMonthIndex = monthIndex;
-      selectedDay = day;
-      currentViewMode = CalendarViewMode.day;
+      selectedDay = null;
+      previewDay = day;
+      currentViewMode = CalendarViewMode.month;
     });
   }
 
@@ -669,6 +713,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             } else {
                               currentCountry ??= 'International';
                             }
+                            selectedDay = null;
+                            previewDay = null;
                           });
                         },
                         itemBuilder: (context) => cultureOptions
@@ -699,6 +745,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           onSelected: (selected) {
                             setState(() {
                               currentCountry = selected;
+                              selectedDay = null;
+                              previewDay = null;
                             });
                           },
                           itemBuilder: (context) => gregorianCountryOptions
@@ -736,6 +784,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         Expanded(
                           child: CalendarGrid(
                             selectedDay: selectedDay,
+                            previewDay: previewDay,
+                            todayDay: _todayDayForCurrentMonthView,
                             onDayTap: handleDayTap,
                           ),
                         ),
@@ -745,6 +795,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             monthName: currentMonthName,
                             year: int.tryParse(displayedYearLabel) ?? currentYear,
                             culture: currentCulture,
+                            monthIndex: currentMonthIndex,
                             selectedDay: selectedDay,
                             entries: currentEntries,
                             holidays: currentHolidays,
@@ -757,10 +808,14 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? YearOverviewGrid(
                           selectedMonthIndex: currentMonthIndex,
                           selectedDay: selectedDay,
+                          todayMonthIndex: _todayMonthIndexForCurrentYearView,
+                          todayDay: _todayDayForCurrentYearView,
+                          highlightToday: _todayMonthIndexForCurrentYearView != null,
                           onMonthTap: (monthIndex) {
                             setState(() {
                               currentMonthIndex = monthIndex;
                               selectedDay = null;
+                              previewDay = null;
                               currentViewMode = CalendarViewMode.month;
                             });
                           },
@@ -771,7 +826,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               monthName: currentMonthName,
                               year: int.tryParse(displayedYearLabel) ?? currentYear,
                               culture: currentCulture,
-                              selectedDay: selectedDay,
+                              selectedDay: selectedDay ?? previewDay,
                               entries: currentEntries,
                               holidays: currentHolidays,
                               onClose: closeDayView,

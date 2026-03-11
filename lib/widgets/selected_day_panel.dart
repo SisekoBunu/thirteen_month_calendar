@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/calendar_entry.dart';
+import '../services/calendar_logic.dart';
 
 class SelectedDayPanel extends StatelessWidget {
   final String monthName;
   final int year;
   final String culture;
+  final int monthIndex;
   final int? selectedDay;
   final List<CalendarEntry> entries;
   final List<String> holidays;
@@ -16,6 +18,7 @@ class SelectedDayPanel extends StatelessWidget {
     required this.monthName,
     required this.year,
     required this.culture,
+    required this.monthIndex,
     required this.selectedDay,
     required this.entries,
     required this.holidays,
@@ -28,6 +31,15 @@ class SelectedDayPanel extends StatelessWidget {
     if (selectedDay == null) {
       return const SizedBox.shrink();
     }
+
+    final gregorian = CalendarLogic.convertCustomToGregorianDate(
+      year,
+      monthIndex,
+      selectedDay!,
+    );
+
+    final gregorianLabel =
+        '${gregorian.year}-${gregorian.month.toString().padLeft(2, '0')}-${gregorian.day.toString().padLeft(2, '0')}';
 
     final eventCount =
         entries.where((e) => e.type == CalendarEntryType.event).length;
@@ -96,6 +108,14 @@ class SelectedDayPanel extends StatelessWidget {
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w500,
+              color: Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Gregorian equivalent: $gregorianLabel',
+            style: const TextStyle(
+              fontSize: 14,
               color: Colors.black54,
             ),
           ),

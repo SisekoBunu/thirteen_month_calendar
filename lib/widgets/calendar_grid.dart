@@ -3,11 +3,15 @@ import '../services/calendar_config.dart';
 
 class CalendarGrid extends StatelessWidget {
   final int? selectedDay;
+  final int? previewDay;
+  final int? todayDay;
   final ValueChanged<int> onDayTap;
 
   const CalendarGrid({
     super.key,
     required this.selectedDay,
+    required this.previewDay,
+    required this.todayDay,
     required this.onDayTap,
   });
 
@@ -59,19 +63,34 @@ class CalendarGrid extends StatelessWidget {
               itemBuilder: (context, index) {
                 final day = index + 1;
                 final isSelected = selectedDay == day;
+                final isPreview = previewDay == day;
+                final isToday = todayDay == day;
+
+                Color backgroundColor = Colors.white;
+                Color borderColor = Colors.grey.shade300;
+                Color textColor = Colors.black87;
+                FontWeight fontWeight = FontWeight.w500;
+
+                if (isSelected) {
+                  backgroundColor = Colors.black87;
+                  borderColor = Colors.black87;
+                  textColor = Colors.white;
+                  fontWeight = FontWeight.w700;
+                } else if (isPreview || isToday) {
+                  backgroundColor = Colors.grey.shade200;
+                  borderColor = Colors.grey.shade500;
+                  textColor = Colors.black87;
+                  fontWeight = FontWeight.w700;
+                }
 
                 return GestureDetector(
                   onTap: () => onDayTap(day),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.black87 : Colors.white,
+                      color: backgroundColor,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isSelected
-                            ? Colors.black87
-                            : Colors.grey.shade300,
-                      ),
+                      border: Border.all(color: borderColor),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.04),
@@ -85,8 +104,8 @@ class CalendarGrid extends StatelessWidget {
                         day.toString(),
                         style: TextStyle(
                           fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: isSelected ? Colors.white : Colors.black87,
+                          fontWeight: fontWeight,
+                          color: textColor,
                         ),
                       ),
                     ),

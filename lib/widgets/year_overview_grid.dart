@@ -4,6 +4,9 @@ import '../services/calendar_config.dart';
 class YearOverviewGrid extends StatelessWidget {
   final int selectedMonthIndex;
   final int? selectedDay;
+  final int? todayMonthIndex;
+  final int? todayDay;
+  final bool highlightToday;
   final ValueChanged<int> onMonthTap;
   final void Function(int monthIndex, int day) onDayTap;
 
@@ -11,6 +14,9 @@ class YearOverviewGrid extends StatelessWidget {
     super.key,
     required this.selectedMonthIndex,
     required this.selectedDay,
+    required this.todayMonthIndex,
+    required this.todayDay,
+    required this.highlightToday,
     required this.onMonthTap,
     required this.onDayTap,
   });
@@ -107,14 +113,30 @@ class YearOverviewGrid extends StatelessWidget {
                           final isSelectedDay =
                               isSelectedMonth && selectedDay == day;
 
+                          final isToday = highlightToday &&
+                              todayMonthIndex == monthIndex &&
+                              todayDay == day;
+
+                          Color backgroundColor = Colors.transparent;
+                          Color textColor = Colors.black87;
+                          FontWeight fontWeight = FontWeight.w500;
+
+                          if (isSelectedDay) {
+                            backgroundColor = Colors.black87;
+                            textColor = Colors.white;
+                            fontWeight = FontWeight.w700;
+                          } else if (isToday) {
+                            backgroundColor = Colors.grey.shade200;
+                            textColor = Colors.black87;
+                            fontWeight = FontWeight.w700;
+                          }
+
                           return InkWell(
                             borderRadius: BorderRadius.circular(10),
                             onTap: () => onDayTap(monthIndex, day),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: isSelectedDay
-                                    ? Colors.black87
-                                    : Colors.transparent,
+                                color: backgroundColor,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Center(
@@ -122,12 +144,8 @@ class YearOverviewGrid extends StatelessWidget {
                                   '$day',
                                   style: TextStyle(
                                     fontSize: 9,
-                                    fontWeight: isSelectedDay
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                    color: isSelectedDay
-                                        ? Colors.white
-                                        : Colors.black87,
+                                    fontWeight: fontWeight,
+                                    color: textColor,
                                   ),
                                 ),
                               ),

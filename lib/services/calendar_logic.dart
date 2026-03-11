@@ -17,6 +17,7 @@ class CustomCalendarDate {
 }
 
 class CalendarLogic {
+
   static final DateTime _epoch = DateTime.utc(1, 4, 1);
 
   static bool isGregorianLeapYear(int year) {
@@ -33,17 +34,8 @@ class CalendarLogic {
     return 364 + 1 + (isCustomLeapYear(customYear) ? 1 : 0);
   }
 
-  static DateTime _startOfCustomYear(int customYear) {
-    DateTime start = _epoch;
-
-    for (int year = 1; year < customYear; year++) {
-      start = start.add(Duration(days: daysInCustomYear(year)));
-    }
-
-    return start;
-  }
-
   static CustomCalendarDate convertGregorianToCustomDate(DateTime gregorianDate) {
+
     final target = DateTime.utc(
       gregorianDate.year,
       gregorianDate.month,
@@ -63,6 +55,7 @@ class CalendarLogic {
     }
 
     if (remaining < 364) {
+
       final int monthIndex = remaining ~/ 28;
       final int day = (remaining % 28) + 1;
 
@@ -106,36 +99,30 @@ class CalendarLogic {
     );
   }
 
-  static DateTime? convertCustomToGregorianDate({
-    required int customYear,
-    required int customMonthIndex,
-    required int customDay,
-  }) {
-    if (customMonthIndex < 0 || customMonthIndex > 12) return null;
-    if (customDay < 1 || customDay > 28) return null;
+  static DateTime convertCustomToGregorianDate(
+    int customYear,
+    int monthIndex,
+    int day,
+  ) {
 
-    final startOfYear = _startOfCustomYear(customYear);
-    final offsetDays = (customMonthIndex * 28) + (customDay - 1);
+    int days = 0;
 
-    return startOfYear.add(Duration(days: offsetDays));
-  }
-
-  static String displayedYearForCulture(String culture, int cycleYear) {
-    switch (culture) {
-      case 'Gregorian':
-        return cycleYear.toString();
-      default:
-        return cycleYear.toString();
+    for (int y = 1; y < customYear; y++) {
+      days += daysInCustomYear(y);
     }
+
+    days += (monthIndex * 28);
+    days += (day - 1);
+
+    return _epoch.add(Duration(days: days));
   }
 
   static CustomCalendarDate currentCustomDate() {
     return convertGregorianToCustomDate(DateTime.now().toUtc());
   }
 
-  static String specialDayLabel(CustomCalendarDate date) {
-    if (date.isYearDay) return 'Year Day';
-    if (date.isLeapDay) return 'Leap Day';
-    return '';
+  static String displayedYearForCulture(String culture, int cycleYear) {
+    return cycleYear.toString();
   }
+
 }
