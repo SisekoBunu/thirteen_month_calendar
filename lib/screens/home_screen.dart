@@ -64,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     currentYear = today.year;
     currentMonthIndex = today.monthIndex ?? 12;
-    selectedDay = today.day;
+    selectedDay = null;
   }
 
   int _currentSystemDayForNow() {

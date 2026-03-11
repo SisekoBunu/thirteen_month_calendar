@@ -33,6 +33,16 @@ class CalendarLogic {
     return 364 + 1 + (isCustomLeapYear(customYear) ? 1 : 0);
   }
 
+  static DateTime _startOfCustomYear(int customYear) {
+    DateTime start = _epoch;
+
+    for (int year = 1; year < customYear; year++) {
+      start = start.add(Duration(days: daysInCustomYear(year)));
+    }
+
+    return start;
+  }
+
   static CustomCalendarDate convertGregorianToCustomDate(DateTime gregorianDate) {
     final target = DateTime.utc(
       gregorianDate.year,
@@ -94,6 +104,20 @@ class CalendarLogic {
       isYearDay: false,
       isLeapDay: false,
     );
+  }
+
+  static DateTime? convertCustomToGregorianDate({
+    required int customYear,
+    required int customMonthIndex,
+    required int customDay,
+  }) {
+    if (customMonthIndex < 0 || customMonthIndex > 12) return null;
+    if (customDay < 1 || customDay > 28) return null;
+
+    final startOfYear = _startOfCustomYear(customYear);
+    final offsetDays = (customMonthIndex * 28) + (customDay - 1);
+
+    return startOfYear.add(Duration(days: offsetDays));
   }
 
   static String displayedYearForCulture(String culture, int cycleYear) {
