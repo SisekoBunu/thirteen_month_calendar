@@ -10,6 +10,7 @@ import '../services/holiday_engine.dart';
 import '../models/calendar_entry.dart';
 
 enum CalendarViewMode { month, year, day }
+enum RecurrenceEndMode { never, onDate }
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -144,15 +145,129 @@ class _HomeScreenState extends State<HomeScreen> {
     return '$culture|$year|$monthIndex|$day';
   }
 
+  int _customOrdinal({
+    required int year,
+    required int monthIndex,
+    required int day,
+  }) {
+    int total = 0;
+
+    for (int y = 1; y < year; y++) {
+      total += CalendarLogic.daysInCustomYear(y);
+    }
+
+    total += (monthIndex * CalendarConfig.daysPerMonth);
+    total += day;
+
+    return total;
+  }
+
+  bool _matchesRecurringDate({
+    required CalendarEntry entry,
+    required int selectedYear,
+    required int selectedMonthIndex,
+    required int selectedDay,
+  }) {
+    if (entry.recurrence == CalendarEntryRecurrence.none) {
+      return false;
+    }
+
+    final anchorOrdinal = _customOrdinal(
+      year: entry.anchorYear,
+      monthIndex: entry.anchorMonthIndex,
+      day: entry.anchorDay,
+    );
+
+    final selectedOrdinal = _customOrdinal(
+      year: selectedYear,
+      monthIndex: selectedMonthIndex,
+      day: selectedDay,
+    );
+
+    if (selectedOrdinal < anchorOrdinal) {
+      return false;
+    }
+
+    if (entry.excludedOrdinals.contains(selectedOrdinal)) {
+      return false;
+    }
+
+    if (entry.hasRecurrenceEnd) {
+      final endOrdinal = _customOrdinal(
+        year: entry.recurrenceEndYear!,
+        monthIndex: entry.recurrenceEndMonthIndex!,
+        day: entry.recurrenceEndDay!,
+      );
+
+      if (selectedOrdinal > endOrdinal) {
+        return false;
+      }
+    }
+
+    final difference = selectedOrdinal - anchorOrdinal;
+
+    switch (entry.recurrence) {
+      case CalendarEntryRecurrence.none:
+        return false;
+      case CalendarEntryRecurrence.daily:
+        return true;
+      case CalendarEntryRecurrence.weekly:
+        return difference % 7 == 0;
+      case CalendarEntryRecurrence.monthly:
+        return selectedDay == entry.anchorDay;
+      case CalendarEntryRecurrence.yearly:
+        return selectedMonthIndex == entry.anchorMonthIndex &&
+            selectedDay == entry.anchorDay;
+    }
+  }
+
+  String? _findEntryStorageKeyById(String id) {
+    for (final mapEntry in entriesByDate.entries) {
+      for (final entry in mapEntry.value) {
+        if (entry.id == id) {
+          return mapEntry.key;
+        }
+      }
+    }
+    return null;
+  }
+
   List<CalendarEntry> _entriesForCurrentSelection() {
     if (selectedDay == null) return [];
-    final key = _dateKey(
+
+    final currentKey = _dateKey(
       culture: currentCulture,
       year: currentYear,
       monthIndex: currentMonthIndex,
       day: selectedDay!,
     );
-    return List<CalendarEntry>.from(entriesByDate[key] ?? []);
+
+    final directEntries = List<CalendarEntry>.from(entriesByDate[currentKey] ?? []);
+    final recurringEntries = <CalendarEntry>[];
+
+    for (final mapEntry in entriesByDate.entries) {
+      final keyParts = mapEntry.key.split('|');
+      if (keyParts.isEmpty || keyParts.first != currentCulture) {
+        continue;
+      }
+
+      if (mapEntry.key == currentKey) {
+        continue;
+      }
+
+      for (final entry in mapEntry.value) {
+        if (_matchesRecurringDate(
+          entry: entry,
+          selectedYear: currentYear,
+          selectedMonthIndex: currentMonthIndex,
+          selectedDay: selectedDay!,
+        )) {
+          recurringEntries.add(entry);
+        }
+      }
+    }
+
+    return [...directEntries, ...recurringEntries];
   }
 
   List<String> _holidaysForCurrentSelection() {
@@ -205,55 +320,204 @@ class _HomeScreenState extends State<HomeScreen> {
     final titleController = TextEditingController();
     final detailsController = TextEditingController();
     final timeController = TextEditingController();
+    CalendarEntryRecurrence selectedRecurrence = CalendarEntryRecurrence.none;
+
+    RecurrenceEndMode endMode = RecurrenceEndMode.never;
+    int endYear = currentYear;
+    int endMonthIndex = currentMonthIndex;
+    int endDay = selectedDay!;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
         final title = _typeLabel(type);
-        return AlertDialog(
-          title: Text('New $title'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: titleController,
-                  decoration: InputDecoration(
-                    labelText: '$title title',
-                  ),
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('New $title'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: titleController,
+                      decoration: InputDecoration(
+                        labelText: '$title title',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: timeController,
+                      decoration: const InputDecoration(
+                        labelText: 'Time (optional)',
+                        hintText: 'e.g. 09:00',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: detailsController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Details (optional)',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<CalendarEntryRecurrence>(
+                      value: selectedRecurrence,
+                      decoration: const InputDecoration(
+                        labelText: 'Repeat',
+                      ),
+                      items: CalendarEntryRecurrence.values
+                          .map(
+                            (value) => DropdownMenuItem(
+                              value: value,
+                              child: Text(_recurrenceLabel(value)),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setDialogState(() {
+                          selectedRecurrence = value;
+                          if (value == CalendarEntryRecurrence.none) {
+                            endMode = RecurrenceEndMode.never;
+                          }
+                        });
+                      },
+                    ),
+                    if (selectedRecurrence != CalendarEntryRecurrence.none) ...[
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<RecurrenceEndMode>(
+                        value: endMode,
+                        decoration: const InputDecoration(
+                          labelText: 'Repeat ends',
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: RecurrenceEndMode.never,
+                            child: Text('Never'),
+                          ),
+                          DropdownMenuItem(
+                            value: RecurrenceEndMode.onDate,
+                            child: Text('On date'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setDialogState(() {
+                            endMode = value;
+                          });
+                        },
+                      ),
+                      if (endMode == RecurrenceEndMode.onDate) ...[
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<int>(
+                          value: endYear,
+                          decoration: const InputDecoration(
+                            labelText: 'End year',
+                          ),
+                          items: List.generate(
+                            20,
+                            (index) => currentYear + index,
+                          )
+                              .map(
+                                (value) => DropdownMenuItem(
+                                  value: value,
+                                  child: Text(value.toString()),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setDialogState(() {
+                              endYear = value;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<int>(
+                          value: endMonthIndex,
+                          decoration: const InputDecoration(
+                            labelText: 'End month',
+                          ),
+                          items: List.generate(
+                            CalendarConfig.monthNames.length,
+                            (index) => index,
+                          )
+                              .map(
+                                (value) => DropdownMenuItem(
+                                  value: value,
+                                  child: Text(CalendarConfig.monthNames[value]),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setDialogState(() {
+                              endMonthIndex = value;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<int>(
+                          value: endDay,
+                          decoration: const InputDecoration(
+                            labelText: 'End day',
+                          ),
+                          items: List.generate(
+                            CalendarConfig.daysPerMonth,
+                            (index) => index + 1,
+                          )
+                              .map(
+                                (value) => DropdownMenuItem(
+                                  value: value,
+                                  child: Text(value.toString()),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setDialogState(() {
+                              endDay = value;
+                            });
+                          },
+                        ),
+                      ],
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: timeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Time (optional)',
-                    hintText: 'e.g. 09:00',
-                  ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: detailsController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Details (optional)',
-                  ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (titleController.text.trim().isEmpty) return;
+                    if (selectedRecurrence != CalendarEntryRecurrence.none &&
+                        endMode == RecurrenceEndMode.onDate) {
+                      final anchorOrdinal = _customOrdinal(
+                        year: currentYear,
+                        monthIndex: currentMonthIndex,
+                        day: selectedDay!,
+                      );
+                      final endOrdinal = _customOrdinal(
+                        year: endYear,
+                        monthIndex: endMonthIndex,
+                        day: endDay,
+                      );
+
+                      if (endOrdinal < anchorOrdinal) return;
+                    }
+                    Navigator.of(context).pop(true);
+                  },
+                  child: const Text('Add'),
                 ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (titleController.text.trim().isEmpty) return;
-                Navigator.of(context).pop(true);
-              },
-              child: const Text('Add'),
-            ),
-          ],
+            );
+          },
         );
       },
     );
@@ -272,6 +536,26 @@ class _HomeScreenState extends State<HomeScreen> {
         title: titleController.text.trim(),
         details: detailsController.text.trim(),
         timeLabel: timeController.text.trim(),
+        recurrence: selectedRecurrence,
+        anchorYear: currentYear,
+        anchorMonthIndex: currentMonthIndex,
+        anchorDay: selectedDay!,
+        recurrenceEndYear:
+            selectedRecurrence == CalendarEntryRecurrence.none ||
+                    endMode == RecurrenceEndMode.never
+                ? null
+                : endYear,
+        recurrenceEndMonthIndex:
+            selectedRecurrence == CalendarEntryRecurrence.none ||
+                    endMode == RecurrenceEndMode.never
+                ? null
+                : endMonthIndex,
+        recurrenceEndDay:
+            selectedRecurrence == CalendarEntryRecurrence.none ||
+                    endMode == RecurrenceEndMode.never
+                ? null
+                : endDay,
+        excludedOrdinals: const [],
       );
 
       setState(() {
@@ -282,103 +566,338 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _showEditEntryDialog(CalendarEntry entry) async {
-    if (selectedDay == null) return;
+    final storageKey = _findEntryStorageKeyById(entry.id);
+    if (storageKey == null) return;
 
     final titleController = TextEditingController(text: entry.title);
     final detailsController = TextEditingController(text: entry.details);
     final timeController = TextEditingController(text: entry.timeLabel);
+    CalendarEntryRecurrence selectedRecurrence = entry.recurrence;
+
+    RecurrenceEndMode endMode = entry.hasRecurrenceEnd
+        ? RecurrenceEndMode.onDate
+        : RecurrenceEndMode.never;
+
+    int endYear = entry.recurrenceEndYear ?? entry.anchorYear;
+    int endMonthIndex = entry.recurrenceEndMonthIndex ?? entry.anchorMonthIndex;
+    int endDay = entry.recurrenceEndDay ?? entry.anchorDay;
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
         final title = _typeLabel(entry.type);
-        return AlertDialog(
-          title: Text('Edit $title'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: titleController,
-                  decoration: InputDecoration(
-                    labelText: '$title title',
-                  ),
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('Edit $title'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: titleController,
+                      decoration: InputDecoration(
+                        labelText: '$title title',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: timeController,
+                      decoration: const InputDecoration(
+                        labelText: 'Time (optional)',
+                        hintText: 'e.g. 09:00',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: detailsController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Details (optional)',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<CalendarEntryRecurrence>(
+                      value: selectedRecurrence,
+                      decoration: const InputDecoration(
+                        labelText: 'Repeat',
+                      ),
+                      items: CalendarEntryRecurrence.values
+                          .map(
+                            (value) => DropdownMenuItem(
+                              value: value,
+                              child: Text(_recurrenceLabel(value)),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setDialogState(() {
+                          selectedRecurrence = value;
+                          if (value == CalendarEntryRecurrence.none) {
+                            endMode = RecurrenceEndMode.never;
+                          }
+                        });
+                      },
+                    ),
+                    if (selectedRecurrence != CalendarEntryRecurrence.none) ...[
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<RecurrenceEndMode>(
+                        value: endMode,
+                        decoration: const InputDecoration(
+                          labelText: 'Repeat ends',
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: RecurrenceEndMode.never,
+                            child: Text('Never'),
+                          ),
+                          DropdownMenuItem(
+                            value: RecurrenceEndMode.onDate,
+                            child: Text('On date'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setDialogState(() {
+                            endMode = value;
+                          });
+                        },
+                      ),
+                      if (endMode == RecurrenceEndMode.onDate) ...[
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<int>(
+                          value: endYear,
+                          decoration: const InputDecoration(
+                            labelText: 'End year',
+                          ),
+                          items: List.generate(
+                            20,
+                            (index) => entry.anchorYear + index,
+                          )
+                              .map(
+                                (value) => DropdownMenuItem(
+                                  value: value,
+                                  child: Text(value.toString()),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setDialogState(() {
+                              endYear = value;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<int>(
+                          value: endMonthIndex,
+                          decoration: const InputDecoration(
+                            labelText: 'End month',
+                          ),
+                          items: List.generate(
+                            CalendarConfig.monthNames.length,
+                            (index) => index,
+                          )
+                              .map(
+                                (value) => DropdownMenuItem(
+                                  value: value,
+                                  child: Text(CalendarConfig.monthNames[value]),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setDialogState(() {
+                              endMonthIndex = value;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<int>(
+                          value: endDay,
+                          decoration: const InputDecoration(
+                            labelText: 'End day',
+                          ),
+                          items: List.generate(
+                            CalendarConfig.daysPerMonth,
+                            (index) => index + 1,
+                          )
+                              .map(
+                                (value) => DropdownMenuItem(
+                                  value: value,
+                                  child: Text(value.toString()),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            setDialogState(() {
+                              endDay = value;
+                            });
+                          },
+                        ),
+                      ],
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: timeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Time (optional)',
-                    hintText: 'e.g. 09:00',
-                  ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: detailsController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Details (optional)',
-                  ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (titleController.text.trim().isEmpty) return;
+                    if (selectedRecurrence != CalendarEntryRecurrence.none &&
+                        endMode == RecurrenceEndMode.onDate) {
+                      final anchorOrdinal = _customOrdinal(
+                        year: entry.anchorYear,
+                        monthIndex: entry.anchorMonthIndex,
+                        day: entry.anchorDay,
+                      );
+                      final endOrdinal = _customOrdinal(
+                        year: endYear,
+                        monthIndex: endMonthIndex,
+                        day: endDay,
+                      );
+
+                      if (endOrdinal < anchorOrdinal) return;
+                    }
+                    Navigator.of(context).pop(true);
+                  },
+                  child: const Text('Save'),
                 ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (titleController.text.trim().isEmpty) return;
-                Navigator.of(context).pop(true);
-              },
-              child: const Text('Save'),
-            ),
-          ],
+            );
+          },
         );
       },
     );
 
     if (confirmed == true) {
-      final key = _dateKey(
-        culture: currentCulture,
-        year: currentYear,
-        monthIndex: currentMonthIndex,
-        day: selectedDay!,
-      );
-
       final updatedEntry = CalendarEntry(
         id: entry.id,
         type: entry.type,
         title: titleController.text.trim(),
         details: detailsController.text.trim(),
         timeLabel: timeController.text.trim(),
+        recurrence: selectedRecurrence,
+        anchorYear: entry.anchorYear,
+        anchorMonthIndex: entry.anchorMonthIndex,
+        anchorDay: entry.anchorDay,
+        recurrenceEndYear:
+            selectedRecurrence == CalendarEntryRecurrence.none ||
+                    endMode == RecurrenceEndMode.never
+                ? null
+                : endYear,
+        recurrenceEndMonthIndex:
+            selectedRecurrence == CalendarEntryRecurrence.none ||
+                    endMode == RecurrenceEndMode.never
+                ? null
+                : endMonthIndex,
+        recurrenceEndDay:
+            selectedRecurrence == CalendarEntryRecurrence.none ||
+                    endMode == RecurrenceEndMode.never
+                ? null
+                : endDay,
+        excludedOrdinals: entry.excludedOrdinals,
       );
 
       setState(() {
-        final current = entriesByDate[key] ?? [];
-        entriesByDate[key] = current
+        final current = entriesByDate[storageKey] ?? [];
+        entriesByDate[storageKey] = current
             .map((e) => e.id == entry.id ? updatedEntry : e)
             .toList();
       });
     }
   }
 
-  void _deleteEntry(String id) {
+  Future<void> _deleteEntry(String id) async {
+    final storageKey = _findEntryStorageKeyById(id);
+    if (storageKey == null) return;
+
+    final current = entriesByDate[storageKey] ?? [];
+    final target = current.where((e) => e.id == id).cast<CalendarEntry?>().firstWhere(
+          (e) => e != null,
+          orElse: () => null,
+        );
+
+    if (target == null) return;
+
+    if (target.recurrence == CalendarEntryRecurrence.none) {
+      setState(() {
+        entriesByDate[storageKey] = current.where((e) => e.id != id).toList();
+      });
+      return;
+    }
+
     if (selectedDay == null) return;
 
-    final key = _dateKey(
-      culture: currentCulture,
-      year: currentYear,
-      monthIndex: currentMonthIndex,
-      day: selectedDay!,
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete recurring entry'),
+          content: const Text(
+            'Do you want to delete only this occurrence, or the entire series?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('cancel'),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop('occurrence'),
+              child: const Text('This occurrence'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop('series'),
+              child: const Text('Entire series'),
+            ),
+          ],
+        );
+      },
     );
 
-    setState(() {
-      final current = entriesByDate[key] ?? [];
-      entriesByDate[key] = current.where((e) => e.id != id).toList();
-    });
+    if (choice == 'series') {
+      setState(() {
+        entriesByDate[storageKey] = current.where((e) => e.id != id).toList();
+      });
+      return;
+    }
+
+    if (choice == 'occurrence') {
+      final selectedOrdinal = _customOrdinal(
+        year: currentYear,
+        monthIndex: currentMonthIndex,
+        day: selectedDay!,
+      );
+
+      final updatedEntry = CalendarEntry(
+        id: target.id,
+        type: target.type,
+        title: target.title,
+        details: target.details,
+        timeLabel: target.timeLabel,
+        recurrence: target.recurrence,
+        anchorYear: target.anchorYear,
+        anchorMonthIndex: target.anchorMonthIndex,
+        anchorDay: target.anchorDay,
+        recurrenceEndYear: target.recurrenceEndYear,
+        recurrenceEndMonthIndex: target.recurrenceEndMonthIndex,
+        recurrenceEndDay: target.recurrenceEndDay,
+        excludedOrdinals: [...target.excludedOrdinals, selectedOrdinal],
+      );
+
+      setState(() {
+        entriesByDate[storageKey] = current
+            .map((e) => e.id == id ? updatedEntry : e)
+            .toList();
+      });
+    }
   }
 
   static String _typeLabel(CalendarEntryType type) {
@@ -390,6 +909,41 @@ class _HomeScreenState extends State<HomeScreen> {
       case CalendarEntryType.alarm:
         return 'Alarm';
     }
+  }
+
+  static String _recurrenceLabel(CalendarEntryRecurrence recurrence) {
+    switch (recurrence) {
+      case CalendarEntryRecurrence.none:
+        return 'Does not repeat';
+      case CalendarEntryRecurrence.daily:
+        return 'Daily';
+      case CalendarEntryRecurrence.weekly:
+        return 'Weekly';
+      case CalendarEntryRecurrence.monthly:
+        return 'Monthly';
+      case CalendarEntryRecurrence.yearly:
+        return 'Yearly';
+    }
+  }
+
+  String _recurrenceSummary(CalendarEntry entry) {
+    if (entry.recurrence == CalendarEntryRecurrence.none) {
+      return 'Does not repeat';
+    }
+
+    final base = switch (entry.recurrence) {
+      CalendarEntryRecurrence.none => 'Does not repeat',
+      CalendarEntryRecurrence.daily => 'Repeats daily',
+      CalendarEntryRecurrence.weekly => 'Repeats weekly',
+      CalendarEntryRecurrence.monthly => 'Repeats monthly',
+      CalendarEntryRecurrence.yearly => 'Repeats yearly',
+    };
+
+    if (!entry.hasRecurrenceEnd) {
+      return '$base forever';
+    }
+
+    return '$base until ${entry.recurrenceEndDay} ${CalendarConfig.monthNames[entry.recurrenceEndMonthIndex!]} ${entry.recurrenceEndYear}';
   }
 
   void nextPrimary() {
@@ -759,6 +1313,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onClose: clearSelectedDay,
                                 onEditEntry: _showEditEntryDialog,
                                 onDeleteEntry: _deleteEntry,
+                                recurrenceSummaryBuilder: _recurrenceSummary,
                               ),
                             ),
                           ),
@@ -793,6 +1348,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               onAddEntry: _showAddEntryTypeDialog,
                               onEditEntry: _showEditEntryDialog,
                               onDeleteEntry: _deleteEntry,
+                              recurrenceSummaryBuilder: _recurrenceSummary,
                             )
                           : const SizedBox.shrink(),
             ),

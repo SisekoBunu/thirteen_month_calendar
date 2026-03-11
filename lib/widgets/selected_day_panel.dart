@@ -13,7 +13,8 @@ class SelectedDayPanel extends StatelessWidget {
   final VoidCallback onClose;
   final VoidCallback onAddEntry;
   final void Function(CalendarEntry entry) onEditEntry;
-  final void Function(String id) onDeleteEntry;
+  final Future<void> Function(String id) onDeleteEntry;
+  final String Function(CalendarEntry entry) recurrenceSummaryBuilder;
 
   const SelectedDayPanel({
     super.key,
@@ -28,6 +29,7 @@ class SelectedDayPanel extends StatelessWidget {
     required this.onAddEntry,
     required this.onEditEntry,
     required this.onDeleteEntry,
+    required this.recurrenceSummaryBuilder,
   });
 
   @override
@@ -209,6 +211,14 @@ class SelectedDayPanel extends StatelessWidget {
                               ),
                             ),
                           ],
+                          const SizedBox(height: 4),
+                          Text(
+                            recurrenceSummaryBuilder(entry),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.black54,
+                            ),
+                          ),
                           if (entry.details.trim().isNotEmpty) ...[
                             const SizedBox(height: 6),
                             Text(
@@ -228,7 +238,7 @@ class SelectedDayPanel extends StatelessWidget {
                       icon: const Icon(Icons.edit_outlined),
                     ),
                     IconButton(
-                      onPressed: () => onDeleteEntry(entry.id),
+                      onPressed: () async => await onDeleteEntry(entry.id),
                       tooltip: 'Delete',
                       icon: const Icon(Icons.delete_outline),
                     ),
