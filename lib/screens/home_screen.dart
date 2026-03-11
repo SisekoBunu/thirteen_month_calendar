@@ -72,6 +72,17 @@ class _HomeScreenState extends State<HomeScreen> {
     return today.day ?? 1;
   }
 
+  void jumpToToday() {
+    final today = CalendarLogic.currentCustomDate();
+
+    setState(() {
+      currentYear = today.year;
+      currentMonthIndex = today.monthIndex ?? 12;
+      selectedDay = today.day;
+      currentViewMode = CalendarViewMode.month;
+    });
+  }
+
   String _dateKey({
     required String culture,
     required int year,
@@ -489,6 +500,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           ),
+                        ),
+                        IconButton(
+                          tooltip: 'Today',
+                          onPressed: jumpToToday,
+                          icon: const Icon(Icons.today),
                         ),
                         IconButton(
                           icon: const Icon(Icons.arrow_forward),
