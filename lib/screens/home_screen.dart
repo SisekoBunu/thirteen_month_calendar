@@ -72,6 +72,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return today.day ?? 1;
   }
 
+  bool get _isFinalMonthOfYear {
+    return currentMonthIndex == CalendarConfig.monthNames.length - 1;
+  }
+
+  bool get _hasLeapDayThisYear {
+    return CalendarLogic.isCustomLeapYear(currentYear);
+  }
+
   void jumpToToday() {
     final today = CalendarLogic.currentCustomDate();
 
@@ -81,6 +89,123 @@ class _HomeScreenState extends State<HomeScreen> {
       selectedDay = today.day;
       currentViewMode = CalendarViewMode.month;
     });
+  }
+
+  void _showSpecialDayDialog({
+    required String title,
+    required String description,
+  }) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(description),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSpecialDayCard({
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.grey.shade300),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.event_available, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildYearEndSpecialDaysSection() {
+    if (!_isFinalMonthOfYear) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: [
+        _buildSpecialDayCard(
+          title: 'Year Day',
+          subtitle: 'Occurs after March 28 and sits outside the normal week/month grid.',
+          onTap: () {
+            _showSpecialDayDialog(
+              title: 'Year Day',
+              description:
+                  'Year Day happens after March 28 at the end of the custom year. '
+                  'It does not belong to any month and does not belong to the normal weekly cycle. '
+                  'After Year Day, the calendar resets into the new year.',
+            );
+          },
+        ),
+        if (_hasLeapDayThisYear)
+          _buildSpecialDayCard(
+            title: 'Leap Day',
+            subtitle: 'Extra correction day after Year Day in leap years only.',
+            onTap: () {
+              _showSpecialDayDialog(
+                title: 'Leap Day',
+                description:
+                    'Leap Day appears only in leap years, after Year Day and before the next April 1. '
+                    'It is outside the normal month/week grid and exists to keep the custom calendar aligned correctly over time.',
+              );
+            },
+          ),
+      ],
+    );
   }
 
   String _dateKey({
@@ -614,6 +739,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             onDayTap: handleDayTap,
                           ),
                         ),
+                        _buildYearEndSpecialDaysSection(),
                         if (selectedDay != null)
                           SelectedDayPanel(
                             monthName: currentMonthName,
