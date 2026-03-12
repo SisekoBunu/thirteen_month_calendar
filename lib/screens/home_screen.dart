@@ -1,13 +1,18 @@
-import 'package:flutter/material.dart';
-import '../widgets/calendar_grid.dart';
+﻿import 'package:flutter/material.dart';
 import '../widgets/year_overview_grid.dart';
 import '../widgets/selected_day_panel.dart';
 import '../widgets/day_view_panel.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/entry_search_dialog.dart';
+import '../widgets/calendar_settings_drawer.dart';
 import '../services/calendar_config.dart';
 import '../services/calendar_logic.dart';
 import '../services/holiday_engine.dart';
+import '../services/entry_storage_service.dart';
+import '../services/entry_search_service.dart';
+import '../services/notification_manager.dart';
 import '../models/calendar_entry.dart';
+import '../models/calendar_search_result.dart';
 
 enum CalendarViewMode { month, year, day }
 enum RecurrenceEndMode { never, onDate }
@@ -20,7 +25,16 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const double _monthSectionExtent = 360.0;
+  static const int _monthWindowBefore = 30;
+  static const int _monthWindowAfter = 30;
+
   final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
+  late final ScrollController _monthScrollController;
+
+  late final int _scrollBaseYear;
+  late final int _scrollBaseMonthIndex;
+  late final int _scrollBaseDay;
 
   int currentMonthIndex = 0;
   int currentYear = 2025;
@@ -32,6 +46,9 @@ class _HomeScreenState extends State<HomeScreen> {
   CalendarViewMode previousViewMode = CalendarViewMode.month;
 
   final Map<String, List<CalendarEntry>> entriesByDate = {};
+  bool _storageReady = false;
+  bool _monthScrollReady = false;
+  bool _isJumpingMonthList = false;
 
   final List<String> cultureOptions = const [
     'Gregorian',
@@ -62,12 +79,80 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+
     final today = CalendarLogic.currentCustomDate();
 
-    currentYear = today.year;
-    currentMonthIndex = today.monthIndex ?? 12;
+    _scrollBaseYear = today.year;
+    _scrollBaseMonthIndex = today.monthIndex ?? 12;
+    _scrollBaseDay = today.day ?? 1;
+
+    currentYear = _scrollBaseYear;
+    currentMonthIndex = _scrollBaseMonthIndex;
     selectedDay = null;
-    previewDay = null;
+    previewDay = _scrollBaseDay;
+
+    _monthScrollController = ScrollController();
+    _monthScrollController.addListener(_handleMonthScroll);
+
+    _loadStoredEntries();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _jumpMonthListTo(
+        year: _scrollBaseYear,
+        monthIndex: _scrollBaseMonthIndex,
+        animate: false,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _monthScrollController.removeListener(_handleMonthScroll);
+    _monthScrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadStoredEntries() async {
+    final stored = await EntryStorageService.loadEntriesByDate();
+
+    if (!mounted) return;
+
+    setState(() {
+      entriesByDate
+        ..clear()
+        ..addAll(stored);
+      _storageReady = true;
+    });
+
+    await NotificationManager.syncFromEntries(entriesByDate);
+  }
+
+  Future<void> _persistEntries() async {
+    await EntryStorageService.saveEntriesByDate(entriesByDate);
+  }
+
+  Future<void> _syncNotifications() async {
+    await NotificationManager.syncFromEntries(entriesByDate);
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    final allowed = await NotificationManager.requestPermission();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          allowed
+              ? 'Notification permission granted.'
+              : 'Notification permission was not granted or is unavailable.',
+        ),
+      ),
+    );
+
+    if (allowed) {
+      await _syncNotifications();
+    }
   }
 
   int _currentSystemDayForNow() {
@@ -105,6 +190,114 @@ class _HomeScreenState extends State<HomeScreen> {
     return null;
   }
 
+  int _absoluteMonthIndex({
+    required int year,
+    required int monthIndex,
+  }) {
+    return (year * CalendarConfig.monthNames.length) + monthIndex;
+  }
+
+  _MonthReference _monthRefFromListIndex(int index) {
+    final baseAbsolute = _absoluteMonthIndex(
+      year: _scrollBaseYear,
+      monthIndex: _scrollBaseMonthIndex,
+    );
+
+    final relativeOffset = index - _monthWindowBefore;
+    final targetAbsolute = baseAbsolute + relativeOffset;
+
+    int year = targetAbsolute ~/ CalendarConfig.monthNames.length;
+    int monthIndex = targetAbsolute % CalendarConfig.monthNames.length;
+
+    if (monthIndex < 0) {
+      monthIndex += CalendarConfig.monthNames.length;
+      year -= 1;
+    }
+
+    return _MonthReference(
+      year: year,
+      monthIndex: monthIndex,
+    );
+  }
+
+  int _listIndexForMonth({
+    required int year,
+    required int monthIndex,
+  }) {
+    final baseAbsolute = _absoluteMonthIndex(
+      year: _scrollBaseYear,
+      monthIndex: _scrollBaseMonthIndex,
+    );
+
+    final targetAbsolute = _absoluteMonthIndex(
+      year: year,
+      monthIndex: monthIndex,
+    );
+
+    return _monthWindowBefore + (targetAbsolute - baseAbsolute);
+  }
+
+  void _handleMonthScroll() {
+    if (!_monthScrollReady || _isJumpingMonthList) return;
+    if (!_monthScrollController.hasClients) return;
+
+    final offset = _monthScrollController.offset.clamp(
+      0.0,
+      _monthScrollController.position.maxScrollExtent,
+    );
+
+    final visibleIndex = (offset / _monthSectionExtent)
+        .round()
+        .clamp(0, _monthWindowBefore + _monthWindowAfter);
+
+    final ref = _monthRefFromListIndex(visibleIndex);
+
+    if (ref.year != currentYear || ref.monthIndex != currentMonthIndex) {
+      if (!mounted) return;
+      setState(() {
+        currentYear = ref.year;
+        currentMonthIndex = ref.monthIndex;
+      });
+    }
+  }
+
+  Future<void> _jumpMonthListTo({
+    required int year,
+    required int monthIndex,
+    required bool animate,
+  }) async {
+    if (!_monthScrollController.hasClients) return;
+
+    final targetIndex = _listIndexForMonth(
+      year: year,
+      monthIndex: monthIndex,
+    ).clamp(0, _monthWindowBefore + _monthWindowAfter);
+
+    final targetOffset = targetIndex * _monthSectionExtent;
+
+    _isJumpingMonthList = true;
+
+    if (animate) {
+      await _monthScrollController.animateTo(
+        targetOffset,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      _monthScrollController.jumpTo(targetOffset);
+    }
+
+    if (mounted) {
+      setState(() {
+        currentYear = year;
+        currentMonthIndex = monthIndex;
+        _monthScrollReady = true;
+      });
+    }
+
+    _isJumpingMonthList = false;
+  }
+
   void jumpToToday() {
     final today = CalendarLogic.currentCustomDate();
 
@@ -115,11 +308,33 @@ class _HomeScreenState extends State<HomeScreen> {
       previewDay = today.day;
       currentViewMode = CalendarViewMode.month;
     });
+
+    _jumpMonthListTo(
+      year: today.year,
+      monthIndex: today.monthIndex ?? 12,
+      animate: true,
+    );
   }
 
-  void handleDayTap(int day) {
+  void clearSelectedDay() {
     setState(() {
-      if (selectedDay == day) {
+      selectedDay = null;
+      previewDay = null;
+    });
+  }
+
+  void _handleContinuousMonthDayTap({
+    required int year,
+    required int monthIndex,
+    required int day,
+  }) {
+    setState(() {
+      currentYear = year;
+      currentMonthIndex = monthIndex;
+
+      if (selectedDay == day &&
+          previewDay == day &&
+          currentViewMode == CalendarViewMode.month) {
         selectedDay = null;
         previewDay = null;
       } else {
@@ -129,10 +344,74 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void clearSelectedDay() {
+  void _openSearchDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return EntrySearchDialog(
+          onSearch: (query) {
+            return EntrySearchService.searchEntries(
+              entriesByDate: entriesByDate,
+              query: query,
+              culture: null,
+            );
+          },
+          onResultTap: _jumpToSearchResult,
+        );
+      },
+    );
+  }
+
+  void _jumpToSearchResult(CalendarSearchResult result) {
     setState(() {
+      currentCulture = result.culture;
+      if (result.culture == 'Gregorian') {
+        currentCountry ??= 'International';
+      } else {
+        currentCountry = null;
+      }
+
+      currentYear = result.year;
+      currentMonthIndex = result.monthIndex;
+      selectedDay = result.day;
+      previewDay = result.day;
+      previousViewMode = currentViewMode;
+      currentViewMode = CalendarViewMode.day;
+    });
+  }
+
+  void _openCalendarSettingsDrawer() {
+    scaffoldKey.currentState?.openEndDrawer();
+  }
+
+  void _selectCulture(String selected) {
+    setState(() {
+      currentCulture = selected;
+      if (selected != 'Gregorian') {
+        currentCountry = null;
+      } else {
+        currentCountry ??= 'International';
+      }
       selectedDay = null;
       previewDay = null;
+    });
+  }
+
+  void _selectCountry(String selected) {
+    setState(() {
+      currentCountry = selected;
+      selectedDay = null;
+      previewDay = null;
+    });
+  }
+
+  void _selectViewMode(CalendarViewMode mode) {
+    setState(() {
+      if (mode == CalendarViewMode.day) {
+        previousViewMode = currentViewMode;
+        selectedDay ??= previewDay ?? _currentSystemDayForNow();
+      }
+      currentViewMode = mode;
     });
   }
 
@@ -242,7 +521,8 @@ class _HomeScreenState extends State<HomeScreen> {
       day: selectedDay!,
     );
 
-    final directEntries = List<CalendarEntry>.from(entriesByDate[currentKey] ?? []);
+    final directEntries =
+        List<CalendarEntry>.from(entriesByDate[currentKey] ?? []);
     final recurringEntries = <CalendarEntry>[];
 
     for (final mapEntry in entriesByDate.entries) {
@@ -562,6 +842,9 @@ class _HomeScreenState extends State<HomeScreen> {
         entriesByDate.putIfAbsent(key, () => []);
         entriesByDate[key] = [newEntry, ...entriesByDate[key]!];
       });
+
+      await _persistEntries();
+      await _syncNotifications();
     }
   }
 
@@ -812,6 +1095,9 @@ class _HomeScreenState extends State<HomeScreen> {
             .map((e) => e.id == entry.id ? updatedEntry : e)
             .toList();
       });
+
+      await _persistEntries();
+      await _syncNotifications();
     }
   }
 
@@ -820,10 +1106,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (storageKey == null) return;
 
     final current = entriesByDate[storageKey] ?? [];
-    final target = current.where((e) => e.id == id).cast<CalendarEntry?>().firstWhere(
-          (e) => e != null,
-          orElse: () => null,
-        );
+    final target =
+        current.where((e) => e.id == id).cast<CalendarEntry?>().firstWhere(
+              (e) => e != null,
+              orElse: () => null,
+            );
 
     if (target == null) return;
 
@@ -831,6 +1118,8 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         entriesByDate[storageKey] = current.where((e) => e.id != id).toList();
       });
+      await _persistEntries();
+      await _syncNotifications();
       return;
     }
 
@@ -866,6 +1155,8 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         entriesByDate[storageKey] = current.where((e) => e.id != id).toList();
       });
+      await _persistEntries();
+      await _syncNotifications();
       return;
     }
 
@@ -897,6 +1188,9 @@ class _HomeScreenState extends State<HomeScreen> {
             .map((e) => e.id == id ? updatedEntry : e)
             .toList();
       });
+
+      await _persistEntries();
+      await _syncNotifications();
     }
   }
 
@@ -947,17 +1241,36 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void nextPrimary() {
-    setState(() {
-      if (currentViewMode == CalendarViewMode.month) {
-        if (currentMonthIndex == CalendarConfig.monthNames.length - 1) {
-          currentMonthIndex = 0;
-          currentYear++;
-        } else {
-          currentMonthIndex++;
-        }
+    if (currentViewMode == CalendarViewMode.month) {
+      final nextAbsolute = _absoluteMonthIndex(
+            year: currentYear,
+            monthIndex: currentMonthIndex,
+          ) +
+          1;
+
+      int nextYear = nextAbsolute ~/ CalendarConfig.monthNames.length;
+      int nextMonthIndex = nextAbsolute % CalendarConfig.monthNames.length;
+
+      if (nextMonthIndex < 0) {
+        nextMonthIndex += CalendarConfig.monthNames.length;
+        nextYear -= 1;
+      }
+
+      setState(() {
         selectedDay = null;
         previewDay = null;
-      } else if (currentViewMode == CalendarViewMode.year) {
+      });
+
+      _jumpMonthListTo(
+        year: nextYear,
+        monthIndex: nextMonthIndex,
+        animate: true,
+      );
+      return;
+    }
+
+    setState(() {
+      if (currentViewMode == CalendarViewMode.year) {
         currentYear++;
       } else if (currentViewMode == CalendarViewMode.day) {
         if (selectedDay == null) {
@@ -979,17 +1292,36 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void previousPrimary() {
-    setState(() {
-      if (currentViewMode == CalendarViewMode.month) {
-        if (currentMonthIndex == 0) {
-          currentMonthIndex = CalendarConfig.monthNames.length - 1;
-          currentYear--;
-        } else {
-          currentMonthIndex--;
-        }
+    if (currentViewMode == CalendarViewMode.month) {
+      final previousAbsolute = _absoluteMonthIndex(
+            year: currentYear,
+            monthIndex: currentMonthIndex,
+          ) -
+          1;
+
+      int previousYear = previousAbsolute ~/ CalendarConfig.monthNames.length;
+      int previousMonthIndex = previousAbsolute % CalendarConfig.monthNames.length;
+
+      if (previousMonthIndex < 0) {
+        previousMonthIndex += CalendarConfig.monthNames.length;
+        previousYear -= 1;
+      }
+
+      setState(() {
         selectedDay = null;
         previewDay = null;
-      } else if (currentViewMode == CalendarViewMode.year) {
+      });
+
+      _jumpMonthListTo(
+        year: previousYear,
+        monthIndex: previousMonthIndex,
+        animate: true,
+      );
+      return;
+    }
+
+    setState(() {
+      if (currentViewMode == CalendarViewMode.year) {
         currentYear--;
       } else if (currentViewMode == CalendarViewMode.day) {
         if (selectedDay == null) {
@@ -1014,18 +1346,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return CalendarLogic.displayedYearForCulture(currentCulture, currentYear);
   }
 
-  String get centerLabel {
-    switch (currentViewMode) {
-      case CalendarViewMode.month:
-        return CalendarConfig.monthNames[currentMonthIndex];
-      case CalendarViewMode.year:
-        return displayedYearLabel;
-      case CalendarViewMode.day:
-        if (selectedDay == null) {
-          return 'Day View';
-        }
-        return '$selectedDay ${CalendarConfig.monthNames[currentMonthIndex]}';
-    }
+  String get navigationMonthLabel {
+    return CalendarConfig.monthNames[currentMonthIndex];
   }
 
   void showPlaceholderMessage(String message) {
@@ -1034,37 +1356,100 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void setViewMode(CalendarViewMode mode) {
-    setState(() {
-      if (mode == CalendarViewMode.day) {
-        previousViewMode = currentViewMode;
-        selectedDay ??= previewDay ?? _currentSystemDayForNow();
-      }
-      currentViewMode = mode;
-    });
-  }
-
-  void handleViewModeSelection(CalendarViewMode selected) {
-    if (selected == CalendarViewMode.day) {
-      setViewMode(CalendarViewMode.day);
-    } else {
-      setViewMode(selected);
-    }
-  }
-
-  void handleYearViewDayTap(int monthIndex, int day) {
-    setState(() {
-      currentMonthIndex = monthIndex;
-      selectedDay = null;
-      previewDay = day;
-      currentViewMode = CalendarViewMode.month;
-    });
-  }
-
   void closeDayView() {
     setState(() {
       currentViewMode = previousViewMode;
     });
+  }
+
+  Widget _buildMonthSelector() {
+    return PopupMenuButton<CalendarViewMode>(
+      tooltip: 'Choose view',
+      onSelected: _selectViewMode,
+      itemBuilder: (context) => const [
+        PopupMenuItem(
+          value: CalendarViewMode.month,
+          child: Text('Month View'),
+        ),
+        PopupMenuItem(
+          value: CalendarViewMode.year,
+          child: Text('Year View'),
+        ),
+        PopupMenuItem(
+          value: CalendarViewMode.day,
+          child: Text('Day View'),
+        ),
+      ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                navigationMonthLabel,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.arrow_drop_down),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContinuousMonthList() {
+    final itemCount = _monthWindowBefore + _monthWindowAfter + 1;
+
+    return ListView.builder(
+      controller: _monthScrollController,
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      itemCount: itemCount,
+      itemBuilder: (context, index) {
+        final monthRef = _monthRefFromListIndex(index);
+        final monthName = CalendarConfig.monthNames[monthRef.monthIndex];
+
+        final today = CalendarLogic.currentCustomDate();
+        final todayDay = today.year == monthRef.year &&
+                today.monthIndex == monthRef.monthIndex
+            ? today.day
+            : null;
+
+        final sectionSelectedDay = currentYear == monthRef.year &&
+                currentMonthIndex == monthRef.monthIndex
+            ? selectedDay
+            : null;
+
+        final sectionPreviewDay = currentYear == monthRef.year &&
+                currentMonthIndex == monthRef.monthIndex
+            ? previewDay
+            : null;
+
+        return SizedBox(
+          height: _monthSectionExtent,
+          child: _ContinuousMonthSection(
+            monthName: monthName,
+            selectedDay: sectionSelectedDay,
+            previewDay: sectionPreviewDay,
+            todayDay: todayDay,
+            onDayTap: (day) {
+              _handleContinuousMonthDayTap(
+                year: monthRef.year,
+                monthIndex: monthRef.monthIndex,
+                day: day,
+              );
+            },
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -1076,6 +1461,16 @@ class _HomeScreenState extends State<HomeScreen> {
     final currentEntries = _entriesForCurrentSelection();
     final currentHolidays = _holidaysForCurrentSelection();
 
+    if (!_storageReady) {
+      return const Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       key: scaffoldKey,
       drawer: AppDrawer(
@@ -1086,217 +1481,101 @@ class _HomeScreenState extends State<HomeScreen> {
           showPlaceholderMessage('Share action will be connected later.');
         },
       ),
+      endDrawer: CalendarSettingsDrawer(
+        currentCulture: currentCulture,
+        currentCountry: currentCountry,
+        cultureOptions: cultureOptions,
+        gregorianCountryOptions: gregorianCountryOptions,
+        onCultureSelected: _selectCulture,
+        onCountrySelected: _selectCountry,
+        onNotificationsTap: _requestNotificationPermission,
+        onTimezoneTap: () {
+          showPlaceholderMessage('Timezone settings coming later.');
+        },
+        onSettingsTap: () {
+          showPlaceholderMessage('More settings coming later.');
+        },
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 14),
-            const Text(
-              '13 Month Calendar',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 14),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+              padding: const EdgeInsets.fromLTRB(12, 14, 12, 4),
               child: Row(
                 children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        tooltip: 'Menu',
-                        onPressed: () {
-                          scaffoldKey.currentState?.openDrawer();
-                        },
-                        icon: const Icon(Icons.menu),
+                  IconButton(
+                    tooltip: 'Menu',
+                    onPressed: () {
+                      scaffoldKey.currentState?.openDrawer();
+                    },
+                    icon: const Icon(Icons.menu),
+                  ),
+                  Expanded(
+                    child: Text(
+                      displayedYearLabel,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
                       ),
-                      PopupMenuButton<CalendarViewMode>(
-                        tooltip: 'View mode',
-                        onSelected: handleViewModeSelection,
-                        itemBuilder: (context) => const [
-                          PopupMenuItem(
-                            value: CalendarViewMode.month,
-                            child: Text('Month View'),
-                          ),
-                          PopupMenuItem(
-                            value: CalendarViewMode.year,
-                            child: Text('Year View'),
-                          ),
-                          PopupMenuItem(
-                            value: CalendarViewMode.day,
-                            child: Text('Day View'),
-                          ),
-                        ],
-                        icon: const Icon(Icons.view_module),
-                      ),
-                      IconButton(
-                        tooltip: 'More',
-                        onPressed: () {
-                          showPlaceholderMessage('More options coming later.');
-                        },
-                        icon: const Icon(Icons.more_horiz),
-                      ),
-                    ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Search',
+                    onPressed: _openSearchDialog,
+                    icon: const Icon(Icons.search),
+                  ),
+                  IconButton(
+                    tooltip: 'Calendar settings',
+                    onPressed: _openCalendarSettingsDrawer,
+                    icon: const Icon(Icons.tune),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios_new),
+                    onPressed: previousPrimary,
                   ),
                   Expanded(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back),
-                          onPressed: previousPrimary,
-                        ),
-                        PopupMenuButton<CalendarViewMode>(
-                          tooltip: 'Choose view',
-                          onSelected: handleViewModeSelection,
-                          itemBuilder: (context) => const [
-                            PopupMenuItem(
-                              value: CalendarViewMode.month,
-                              child: Text('Month View'),
-                            ),
-                            PopupMenuItem(
-                              value: CalendarViewMode.year,
-                              child: Text('Year View'),
-                            ),
-                            PopupMenuItem(
-                              value: CalendarViewMode.day,
-                              child: Text('Day View'),
-                            ),
-                          ],
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
-                            child: Text(
-                              centerLabel,
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                              ),
+                        _buildMonthSelector(),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: jumpToToday,
+                          borderRadius: BorderRadius.circular(20),
+                          child: const Padding(
+                            padding: EdgeInsets.all(4),
+                            child: Icon(
+                              Icons.today,
+                              size: 20,
                             ),
                           ),
-                        ),
-                        IconButton(
-                          tooltip: 'Today',
-                          onPressed: jumpToToday,
-                          icon: const Icon(Icons.today),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.arrow_forward),
-                          onPressed: nextPrimary,
                         ),
                       ],
                     ),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          if (isYearView) {
-                            showPlaceholderMessage(
-                              'Use the arrows to change the year here.',
-                            );
-                          } else {
-                            setViewMode(CalendarViewMode.year);
-                          }
-                        },
-                        child: Text(
-                          displayedYearLabel,
-                          style: const TextStyle(
-                            color: Colors.black87,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      PopupMenuButton<String>(
-                        tooltip: 'Choose culture',
-                        onSelected: (selected) {
-                          setState(() {
-                            currentCulture = selected;
-                            if (selected != 'Gregorian') {
-                              currentCountry = null;
-                            } else {
-                              currentCountry ??= 'International';
-                            }
-                            selectedDay = null;
-                            previewDay = null;
-                          });
-                        },
-                        itemBuilder: (context) => cultureOptions
-                            .map(
-                              (culture) => PopupMenuItem<String>(
-                                value: culture,
-                                child: Text(culture),
-                              ),
-                            )
-                            .toList(),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 6,
-                          ),
-                          child: Text(
-                            currentCulture,
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (currentCulture == 'Gregorian')
-                        PopupMenuButton<String>(
-                          tooltip: 'Choose country pack',
-                          onSelected: (selected) {
-                            setState(() {
-                              currentCountry = selected;
-                              selectedDay = null;
-                              previewDay = null;
-                            });
-                          },
-                          itemBuilder: (context) => gregorianCountryOptions
-                              .map(
-                                (country) => PopupMenuItem<String>(
-                                  value: country,
-                                  child: Text(country),
-                                ),
-                              )
-                              .toList(),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
-                            child: Text(
-                              currentCountry ?? 'International',
-                              style: const TextStyle(
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
+                  IconButton(
+                    icon: const Icon(Icons.arrow_forward_ios),
+                    onPressed: nextPrimary,
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 6),
             Expanded(
               child: isMonthView
                   ? Column(
                       children: [
                         Expanded(
-                          child: CalendarGrid(
-                            selectedDay: selectedDay,
-                            previewDay: previewDay,
-                            todayDay: _todayDayForCurrentMonthView,
-                            onDayTap: handleDayTap,
-                          ),
+                          child: _buildContinuousMonthList(),
                         ),
                         if (selectedDay != null)
                           Flexible(
@@ -1333,8 +1612,27 @@ class _HomeScreenState extends State<HomeScreen> {
                               previewDay = null;
                               currentViewMode = CalendarViewMode.month;
                             });
+
+                            _jumpMonthListTo(
+                              year: currentYear,
+                              monthIndex: monthIndex,
+                              animate: false,
+                            );
                           },
-                          onDayTap: handleYearViewDayTap,
+                          onDayTap: (monthIndex, day) {
+                            setState(() {
+                              currentMonthIndex = monthIndex;
+                              selectedDay = null;
+                              previewDay = day;
+                              currentViewMode = CalendarViewMode.month;
+                            });
+
+                            _jumpMonthListTo(
+                              year: currentYear,
+                              monthIndex: monthIndex,
+                              animate: false,
+                            );
+                          },
                         )
                       : isDayView
                           ? DayViewPanel(
@@ -1353,6 +1651,154 @@ class _HomeScreenState extends State<HomeScreen> {
                           : const SizedBox.shrink(),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MonthReference {
+  final int year;
+  final int monthIndex;
+
+  const _MonthReference({
+    required this.year,
+    required this.monthIndex,
+  });
+}
+
+class _ContinuousMonthSection extends StatelessWidget {
+  final String monthName;
+  final int? selectedDay;
+  final int? previewDay;
+  final int? todayDay;
+  final ValueChanged<int> onDayTap;
+
+  const _ContinuousMonthSection({
+    required this.monthName,
+    required this.selectedDay,
+    required this.previewDay,
+    required this.todayDay,
+    required this.onDayTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.fromLTRB(0, 6, 0, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              monthName,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: const [
+              _MiniWeekdayLabel('Mon'),
+              _MiniWeekdayLabel('Tue'),
+              _MiniWeekdayLabel('Wed'),
+              _MiniWeekdayLabel('Thu'),
+              _MiniWeekdayLabel('Fri'),
+              _MiniWeekdayLabel('Sat'),
+              _MiniWeekdayLabel('Sun'),
+            ],
+          ),
+          const SizedBox(height: 8),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: CalendarConfig.daysPerMonth,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 7,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 1.15,
+            ),
+            itemBuilder: (context, index) {
+              final day = index + 1;
+              final isSelected = selectedDay == day;
+              final isPreview = previewDay == day;
+              final isToday = todayDay == day;
+
+              Color backgroundColor = Colors.white;
+              Color borderColor = Colors.grey.shade300;
+              Color textColor = Colors.black87;
+              FontWeight fontWeight = FontWeight.w500;
+
+              if (isSelected) {
+                backgroundColor = Colors.black87;
+                borderColor = Colors.black87;
+                textColor = Colors.white;
+                fontWeight = FontWeight.w700;
+              } else if (isPreview || isToday) {
+                backgroundColor = Colors.grey.shade200;
+                borderColor = Colors.grey.shade500;
+                textColor = Colors.black87;
+                fontWeight = FontWeight.w700;
+              }
+
+              return GestureDetector(
+                onTap: () => onDayTap(day),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  decoration: BoxDecoration(
+                    color: backgroundColor,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: borderColor),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      day.toString(),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: fontWeight,
+                        color: textColor,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniWeekdayLabel extends StatelessWidget {
+  final String label;
+
+  const _MiniWeekdayLabel(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Center(
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: Colors.black54,
+          ),
         ),
       ),
     );
