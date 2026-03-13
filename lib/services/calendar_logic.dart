@@ -1,3 +1,5 @@
+import 'culture_config.dart';
+
 class CustomCalendarDate {
   final int year;
   final int? monthIndex;
@@ -17,7 +19,6 @@ class CustomCalendarDate {
 }
 
 class CalendarLogic {
-
   static final DateTime _epoch = DateTime.utc(1, 4, 1);
 
   static bool isGregorianLeapYear(int year) {
@@ -35,7 +36,6 @@ class CalendarLogic {
   }
 
   static CustomCalendarDate convertGregorianToCustomDate(DateTime gregorianDate) {
-
     final target = DateTime.utc(
       gregorianDate.year,
       gregorianDate.month,
@@ -55,7 +55,6 @@ class CalendarLogic {
     }
 
     if (remaining < 364) {
-
       final int monthIndex = remaining ~/ 28;
       final int day = (remaining % 28) + 1;
 
@@ -104,7 +103,6 @@ class CalendarLogic {
     int monthIndex,
     int day,
   ) {
-
     int days = 0;
 
     for (int y = 1; y < customYear; y++) {
@@ -122,7 +120,27 @@ class CalendarLogic {
   }
 
   static String displayedYearForCulture(String culture, int cycleYear) {
-    return cycleYear.toString();
-  }
+    final config = CultureRegistry.cultures[culture];
 
+    if (config == null) {
+      return cycleYear.toString();
+    }
+
+    switch (config.eraSystem) {
+      case EraSystem.astronomical:
+        return cycleYear.toString();
+
+      case EraSystem.offset:
+        final adjusted = cycleYear + config.yearOffset;
+        return adjusted.toString();
+
+      case EraSystem.christian:
+        if (cycleYear >= 1) {
+          return '$cycleYear AD';
+        } else {
+          final bcYear = cycleYear.abs() + 1;
+          return '$bcYear BC';
+        }
+    }
+  }
 }
