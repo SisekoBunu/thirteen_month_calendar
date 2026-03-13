@@ -119,7 +119,31 @@ class CalendarLogic {
     return convertGregorianToCustomDate(DateTime.now().toUtc());
   }
 
-  static String displayedYearForCulture(String culture, int cycleYear) {
+  static int _gregorianToJulianDay(DateTime date) {
+    final a = (14 - date.month) ~/ 12;
+    final y = date.year + 4800 - a;
+    final m = date.month + (12 * a) - 3;
+
+    return date.day +
+        ((153 * m + 2) ~/ 5) +
+        365 * y +
+        (y ~/ 4) -
+        (y ~/ 100) +
+        (y ~/ 400) -
+        32045;
+  }
+
+  static int _islamicYearFromGregorian(DateTime date) {
+    final jd = _gregorianToJulianDay(date);
+    return ((30 * (jd - 1948439) + 10646) ~/ 10631);
+  }
+
+  static String displayedYearForCulture(
+    String culture,
+    int cycleYear, {
+    int? monthIndex,
+    int? day,
+  }) {
     final config = CultureRegistry.cultures[culture];
 
     if (config == null) {
@@ -137,6 +161,15 @@ class CalendarLogic {
       case EraSystem.christianUssher:
         final adjusted = cycleYear + config.yearOffset;
         return adjusted.toString();
+
+      case EraSystem.islamicHijri:
+        final gregorian = convertCustomToGregorianDate(
+          cycleYear,
+          monthIndex ?? 0,
+          day ?? 1,
+        );
+        final hijriYear = _islamicYearFromGregorian(gregorian);
+        return hijriYear.toString();
     }
   }
 }

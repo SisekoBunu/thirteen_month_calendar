@@ -1367,7 +1367,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String get displayedYearLabel {
-    return CalendarLogic.displayedYearForCulture(currentCulture, currentYear);
+    return CalendarLogic.displayedYearForCulture(
+      currentCulture,
+      currentYear,
+      monthIndex: currentMonthIndex,
+      day: selectedDay ?? previewDay ?? 1,
+    );
   }
 
   String get navigationMonthLabel {
@@ -1830,4 +1835,3 @@ class _MiniWeekdayLabel extends StatelessWidget {
     );
   }
 }
-

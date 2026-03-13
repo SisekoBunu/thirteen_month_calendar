@@ -1,6 +1,7 @@
 import '../models/holiday_item.dart';
 import 'calendar_logic.dart';
 import 'christian_timeline_service.dart';
+import 'islamic_calendar_service.dart';
 import 'islamic_timeline_service.dart';
 
 class HolidayEngine {
@@ -67,81 +68,6 @@ class HolidayEngine {
       profile: 'Christian (Ussher Chronology)',
       accuracyLabel: 'traditional',
       category: 'Christian holiday',
-    ),
-  ];
-
-  static const List<HolidayItem> baseIslamicHolidays = [
-    HolidayItem(
-      name: "Islamic New Year",
-      gregorianMonth: 7,
-      gregorianDay: 16,
-      profile: 'Islamic',
-      accuracyLabel: 'traditional',
-      category: 'Islamic holiday',
-    ),
-    HolidayItem(
-      name: "Ashura",
-      gregorianMonth: 7,
-      gregorianDay: 25,
-      profile: 'Islamic',
-      accuracyLabel: 'traditional',
-      category: 'Islamic observance',
-    ),
-    HolidayItem(
-      name: "Mawlid al-Nabi",
-      gregorianMonth: 9,
-      gregorianDay: 16,
-      profile: 'Islamic',
-      accuracyLabel: 'traditional',
-      category: 'Islamic observance',
-    ),
-    HolidayItem(
-      name: "Isra and Mi'raj",
-      gregorianMonth: 2,
-      gregorianDay: 8,
-      profile: 'Islamic',
-      accuracyLabel: 'traditional',
-      category: 'Islamic observance',
-    ),
-    HolidayItem(
-      name: "Ramadan Start",
-      gregorianMonth: 3,
-      gregorianDay: 1,
-      profile: 'Islamic',
-      accuracyLabel: 'traditional',
-      category: 'Islamic observance',
-    ),
-    HolidayItem(
-      name: "Laylat al-Qadr",
-      gregorianMonth: 3,
-      gregorianDay: 27,
-      profile: 'Islamic',
-      accuracyLabel: 'traditional',
-      category: 'Islamic observance',
-    ),
-    HolidayItem(
-      name: "Eid al-Fitr",
-      gregorianMonth: 3,
-      gregorianDay: 30,
-      profile: 'Islamic',
-      accuracyLabel: 'traditional',
-      category: 'Islamic holiday',
-    ),
-    HolidayItem(
-      name: "Day of Arafah",
-      gregorianMonth: 6,
-      gregorianDay: 5,
-      profile: 'Islamic',
-      accuracyLabel: 'traditional',
-      category: 'Islamic observance',
-    ),
-    HolidayItem(
-      name: "Eid al-Adha",
-      gregorianMonth: 6,
-      gregorianDay: 6,
-      profile: 'Islamic',
-      accuracyLabel: 'traditional',
-      category: 'Islamic holiday',
     ),
   ];
 
@@ -547,6 +473,27 @@ class HolidayEngine {
     return unique;
   }
 
+  static List<HolidayItem> getIslamicHolidays({
+    required int customYear,
+  }) {
+    final holidays = <HolidayItem>[
+      ...IslamicCalendarService.getIslamicHolidays(customYear: customYear),
+    ];
+
+    final seen = <String>{};
+    final unique = <HolidayItem>[];
+
+    for (final holiday in holidays) {
+      final key =
+          '${holiday.name}|${holiday.gregorianMonth}|${holiday.gregorianDay}|${holiday.country ?? ''}';
+      if (seen.add(key)) {
+        unique.add(holiday);
+      }
+    }
+
+    return unique;
+  }
+
   static String _formatLabelSuffix(HolidayItem holiday) {
     if (holiday.accuracyLabel == null || holiday.accuracyLabel!.trim().isEmpty) {
       return '';
@@ -809,7 +756,9 @@ class HolidayEngine {
     }
 
     if (profile == 'Islamic') {
-      final holidays = baseIslamicHolidays;
+      final holidays = getIslamicHolidays(
+        customYear: customYear,
+      );
 
       return holidays
           .where(

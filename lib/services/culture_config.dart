@@ -13,6 +13,7 @@ class CultureConfig {
 enum EraSystem {
   astronomical,
   christianUssher,
+  islamicHijri,
   offset,
 }
 
@@ -26,6 +27,10 @@ class CultureRegistry {
       name: 'Christian (Ussher Chronology)',
       eraSystem: EraSystem.christianUssher,
       yearOffset: 4004,
+    ),
+    'Islamic': CultureConfig(
+      name: 'Islamic',
+      eraSystem: EraSystem.islamicHijri,
     ),
     'Buddhist': CultureConfig(
       name: 'Buddhist',
@@ -41,10 +46,6 @@ class CultureRegistry {
       name: 'Korean Dangi',
       eraSystem: EraSystem.offset,
       yearOffset: 2333,
-    ),
-    'Islamic': CultureConfig(
-      name: 'Islamic',
-      eraSystem: EraSystem.astronomical,
     ),
     'Hebrew': CultureConfig(
       name: 'Hebrew',
