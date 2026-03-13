@@ -12,7 +12,7 @@ class CultureConfig {
 
 enum EraSystem {
   astronomical,
-  christian,
+  christianUssher,
   offset,
 }
 
@@ -22,9 +22,10 @@ class CultureRegistry {
       name: 'Gregorian',
       eraSystem: EraSystem.astronomical,
     ),
-    'Christian': CultureConfig(
-      name: 'Christian',
-      eraSystem: EraSystem.christian,
+    'Christian (Ussher Chronology)': CultureConfig(
+      name: 'Christian (Ussher Chronology)',
+      eraSystem: EraSystem.christianUssher,
+      yearOffset: 4004,
     ),
     'Buddhist': CultureConfig(
       name: 'Buddhist',

@@ -14,34 +14,27 @@ import '../services/notification_manager.dart';
 import '../models/calendar_entry.dart';
 import '../models/calendar_search_result.dart';
 
-
 enum CalendarViewMode { month, year, day }
 enum RecurrenceEndMode { never, onDate }
-
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
-
 
 class _HomeScreenState extends State<HomeScreen> {
   static const double _monthSectionExtent = 360.0;
   static const int _monthWindowBefore = 30;
   static const int _monthWindowAfter = 30;
 
-
   final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
   late final ScrollController _monthScrollController;
-
 
   late final int _scrollBaseYear;
   late final int _scrollBaseMonthIndex;
   late final int _scrollBaseDay;
-
 
   int currentMonthIndex = 0;
   int currentYear = 2025;
@@ -52,16 +45,14 @@ class _HomeScreenState extends State<HomeScreen> {
   CalendarViewMode currentViewMode = CalendarViewMode.month;
   CalendarViewMode previousViewMode = CalendarViewMode.month;
 
-
   final Map<String, List<CalendarEntry>> entriesByDate = {};
   bool _storageReady = false;
   bool _monthScrollReady = false;
   bool _isJumpingMonthList = false;
 
-
   final List<String> cultureOptions = const [
     'Gregorian',
-    'Christian',
+    'Christian (Ussher Chronology)',
     'Islamic',
     'Hebrew',
     'Chinese',
@@ -75,7 +66,6 @@ class _HomeScreenState extends State<HomeScreen> {
     'Thai Solar',
   ];
 
-
   final List<String> gregorianCountryOptions = const [
     'International',
     'South Africa',
@@ -86,34 +76,27 @@ class _HomeScreenState extends State<HomeScreen> {
     'New Zealand',
   ];
 
-
   @override
   void initState() {
     super.initState();
 
-
     final today = CalendarLogic.currentCustomDate();
-
 
     _scrollBaseYear = today.year;
     _scrollBaseMonthIndex = today.monthIndex ?? 12;
     _scrollBaseDay = today.day ?? 1;
-
 
     currentYear = _scrollBaseYear;
     currentMonthIndex = _scrollBaseMonthIndex;
     selectedDay = null;
     previewDay = _scrollBaseDay;
 
-
     _monthScrollController = ScrollController(
       initialScrollOffset: _monthWindowBefore * _monthSectionExtent,
     );
     _monthScrollController.addListener(_handleMonthScroll);
 
-
     _loadStoredEntries();
-
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -124,7 +107,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-
   @override
   void dispose() {
     _monthScrollController.removeListener(_handleMonthScroll);
@@ -132,13 +114,10 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-
   Future<void> _loadStoredEntries() async {
     final stored = await EntryStorageService.loadEntriesByDate();
 
-
     if (!mounted) return;
-
 
     setState(() {
       entriesByDate
@@ -147,27 +126,21 @@ class _HomeScreenState extends State<HomeScreen> {
       _storageReady = true;
     });
 
-
     await NotificationManager.syncFromEntries(entriesByDate);
   }
-
 
   Future<void> _persistEntries() async {
     await EntryStorageService.saveEntriesByDate(entriesByDate);
   }
 
-
   Future<void> _syncNotifications() async {
     await NotificationManager.syncFromEntries(entriesByDate);
   }
 
-
   Future<void> _requestNotificationPermission() async {
     final allowed = await NotificationManager.requestPermission();
 
-
     if (!mounted) return;
-
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -179,57 +152,45 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
 
-
     if (allowed) {
       await _syncNotifications();
     }
   }
-
 
   int _currentSystemDayForNow() {
     final today = CalendarLogic.currentCustomDate();
     return today.day ?? 1;
   }
 
-
   int? get _todayDayForCurrentMonthView {
     final today = CalendarLogic.currentCustomDate();
-
 
     if (today.year == currentYear && today.monthIndex == currentMonthIndex) {
       return today.day;
     }
 
-
     return null;
   }
 
-
   int? get _todayMonthIndexForCurrentYearView {
     final today = CalendarLogic.currentCustomDate();
-
 
     if (today.year == currentYear) {
       return today.monthIndex;
     }
 
-
     return null;
   }
 
-
   int? get _todayDayForCurrentYearView {
     final today = CalendarLogic.currentCustomDate();
-
 
     if (today.year == currentYear) {
       return today.day;
     }
 
-
     return null;
   }
-
 
   int _absoluteMonthIndex({
     required int year,
@@ -238,34 +199,28 @@ class _HomeScreenState extends State<HomeScreen> {
     return (year * CalendarConfig.monthNames.length) + monthIndex;
   }
 
-
   _MonthReference _monthRefFromListIndex(int index) {
     final baseAbsolute = _absoluteMonthIndex(
       year: _scrollBaseYear,
       monthIndex: _scrollBaseMonthIndex,
     );
 
-
     final relativeOffset = index - _monthWindowBefore;
     final targetAbsolute = baseAbsolute + relativeOffset;
 
-
     int year = targetAbsolute ~/ CalendarConfig.monthNames.length;
     int monthIndex = targetAbsolute % CalendarConfig.monthNames.length;
-
 
     if (monthIndex < 0) {
       monthIndex += CalendarConfig.monthNames.length;
       year -= 1;
     }
 
-
     return _MonthReference(
       year: year,
       monthIndex: monthIndex,
     );
   }
-
 
   int _listIndexForMonth({
     required int year,
@@ -276,35 +231,28 @@ class _HomeScreenState extends State<HomeScreen> {
       monthIndex: _scrollBaseMonthIndex,
     );
 
-
     final targetAbsolute = _absoluteMonthIndex(
       year: year,
       monthIndex: monthIndex,
     );
 
-
     return _monthWindowBefore + (targetAbsolute - baseAbsolute);
   }
-
 
   void _handleMonthScroll() {
     if (!_monthScrollReady || _isJumpingMonthList) return;
     if (!_monthScrollController.hasClients) return;
-
 
     final offset = _monthScrollController.offset.clamp(
       0.0,
       _monthScrollController.position.maxScrollExtent,
     );
 
-
     final visibleIndex = (offset / _monthSectionExtent)
         .round()
         .clamp(0, _monthWindowBefore + _monthWindowAfter);
 
-
     final ref = _monthRefFromListIndex(visibleIndex);
-
 
     if (ref.year != currentYear || ref.monthIndex != currentMonthIndex) {
       if (!mounted) return;
@@ -315,7 +263,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-
   Future<void> _jumpMonthListTo({
     required int year,
     required int monthIndex,
@@ -323,18 +270,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }) async {
     if (!_monthScrollController.hasClients) return;
 
-
     final targetIndex = _listIndexForMonth(
       year: year,
       monthIndex: monthIndex,
     ).clamp(0, _monthWindowBefore + _monthWindowAfter);
 
-
     final targetOffset = targetIndex * _monthSectionExtent;
 
-
     _isJumpingMonthList = true;
-
 
     if (animate) {
       await _monthScrollController.animateTo(
@@ -346,7 +289,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _monthScrollController.jumpTo(targetOffset);
     }
 
-
     if (mounted) {
       setState(() {
         currentYear = year;
@@ -355,14 +297,11 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
 
-
     _isJumpingMonthList = false;
   }
 
-
   void jumpToToday() {
     final today = CalendarLogic.currentCustomDate();
-
 
     setState(() {
       currentYear = today.year;
@@ -372,7 +311,6 @@ class _HomeScreenState extends State<HomeScreen> {
       currentViewMode = CalendarViewMode.month;
     });
 
-
     _jumpMonthListTo(
       year: today.year,
       monthIndex: today.monthIndex ?? 12,
@@ -380,14 +318,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
   void clearSelectedDay() {
     setState(() {
       selectedDay = null;
       previewDay = null;
     });
   }
-
 
   void _handleContinuousMonthDayTap({
     required int year,
@@ -397,7 +333,6 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       currentYear = year;
       currentMonthIndex = monthIndex;
-
 
       if (selectedDay == day &&
           previewDay == day &&
@@ -410,7 +345,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
   }
-
 
   void _openSearchDialog() {
     showDialog(
@@ -430,7 +364,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
   void _jumpToSearchResult(CalendarSearchResult result) {
     setState(() {
       currentCulture = result.culture;
@@ -439,7 +372,6 @@ class _HomeScreenState extends State<HomeScreen> {
       } else {
         currentCountry = null;
       }
-
 
       currentYear = result.year;
       currentMonthIndex = result.monthIndex;
@@ -450,11 +382,9 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-
   void _openCalendarSettingsDrawer() {
     scaffoldKey.currentState?.openEndDrawer();
   }
-
 
   void _selectCulture(String selected) {
     setState(() {
@@ -469,7 +399,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-
   void _selectCountry(String selected) {
     setState(() {
       currentCountry = selected;
@@ -477,7 +406,6 @@ class _HomeScreenState extends State<HomeScreen> {
       previewDay = null;
     });
   }
-
 
   void _selectViewMode(CalendarViewMode mode) {
     setState(() {
@@ -489,7 +417,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-
   String _dateKey({
     required String culture,
     required int year,
@@ -499,7 +426,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return '$culture|$year|$monthIndex|$day';
   }
 
-
   int _customOrdinal({
     required int year,
     required int monthIndex,
@@ -507,19 +433,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     int total = 0;
 
-
     for (int y = 1; y < year; y++) {
       total += CalendarLogic.daysInCustomYear(y);
     }
 
-
     total += (monthIndex * CalendarConfig.daysPerMonth);
     total += day;
 
-
     return total;
   }
-
 
   bool _matchesRecurringDate({
     required CalendarEntry entry,
@@ -531,13 +453,11 @@ class _HomeScreenState extends State<HomeScreen> {
       return false;
     }
 
-
     final anchorOrdinal = _customOrdinal(
       year: entry.anchorYear,
       monthIndex: entry.anchorMonthIndex,
       day: entry.anchorDay,
     );
-
 
     final selectedOrdinal = _customOrdinal(
       year: selectedYear,
@@ -545,16 +465,13 @@ class _HomeScreenState extends State<HomeScreen> {
       day: selectedDay,
     );
 
-
     if (selectedOrdinal < anchorOrdinal) {
       return false;
     }
 
-
     if (entry.excludedOrdinals.contains(selectedOrdinal)) {
       return false;
     }
-
 
     if (entry.hasRecurrenceEnd) {
       final endOrdinal = _customOrdinal(
@@ -563,15 +480,12 @@ class _HomeScreenState extends State<HomeScreen> {
         day: entry.recurrenceEndDay!,
       );
 
-
       if (selectedOrdinal > endOrdinal) {
         return false;
       }
     }
 
-
     final difference = selectedOrdinal - anchorOrdinal;
-
 
     switch (entry.recurrence) {
       case CalendarEntryRecurrence.none:
@@ -588,7 +502,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-
   String? _findEntryStorageKeyById(String id) {
     for (final mapEntry in entriesByDate.entries) {
       for (final entry in mapEntry.value) {
@@ -600,10 +513,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return null;
   }
 
-
   List<CalendarEntry> _entriesForCurrentSelection() {
     if (selectedDay == null) return [];
-
 
     final currentKey = _dateKey(
       culture: currentCulture,
@@ -612,11 +523,9 @@ class _HomeScreenState extends State<HomeScreen> {
       day: selectedDay!,
     );
 
-
     final directEntries =
         List<CalendarEntry>.from(entriesByDate[currentKey] ?? []);
     final recurringEntries = <CalendarEntry>[];
-
 
     for (final mapEntry in entriesByDate.entries) {
       final keyParts = mapEntry.key.split('|');
@@ -624,11 +533,9 @@ class _HomeScreenState extends State<HomeScreen> {
         continue;
       }
 
-
       if (mapEntry.key == currentKey) {
         continue;
       }
-
 
       for (final entry in mapEntry.value) {
         if (_matchesRecurringDate(
@@ -642,10 +549,8 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
 
-
     return [...directEntries, ...recurringEntries];
   }
-
 
   List<String> _holidaysForCurrentSelection() {
     return HolidayEngine.getHolidayNamesForCurrentSelection(
@@ -657,10 +562,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
   Future<void> _showAddEntryTypeDialog() async {
     if (selectedDay == null) return;
-
 
     final selectedType = await showDialog<CalendarEntryType>(
       context: context,
@@ -688,34 +591,28 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
 
-
     if (selectedType != null) {
       await _showAddEntryDialog(selectedType);
     }
   }
 
-
   Future<void> _showAddEntryDialog(CalendarEntryType type) async {
     if (selectedDay == null) return;
-
 
     final titleController = TextEditingController();
     final detailsController = TextEditingController();
     final timeController = TextEditingController();
     CalendarEntryRecurrence selectedRecurrence = CalendarEntryRecurrence.none;
 
-
     RecurrenceEndMode endMode = RecurrenceEndMode.never;
     int endYear = currentYear;
     int endMonthIndex = currentMonthIndex;
     int endDay = selectedDay!;
 
-
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
         final title = _typeLabel(type);
-
 
         return StatefulBuilder(
           builder: (context, setDialogState) {
@@ -894,7 +791,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         day: endDay,
                       );
 
-
                       if (endOrdinal < anchorOrdinal) return;
                     }
                     Navigator.of(context).pop(true);
@@ -908,7 +804,6 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
 
-
     if (confirmed == true) {
       final key = _dateKey(
         culture: currentCulture,
@@ -916,7 +811,6 @@ class _HomeScreenState extends State<HomeScreen> {
         monthIndex: currentMonthIndex,
         day: selectedDay!,
       );
-
 
       final newEntry = CalendarEntry(
         id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -946,45 +840,37 @@ class _HomeScreenState extends State<HomeScreen> {
         excludedOrdinals: const [],
       );
 
-
       setState(() {
         entriesByDate.putIfAbsent(key, () => []);
         entriesByDate[key] = [newEntry, ...entriesByDate[key]!];
       });
-
 
       await _persistEntries();
       await _syncNotifications();
     }
   }
 
-
   Future<void> _showEditEntryDialog(CalendarEntry entry) async {
     final storageKey = _findEntryStorageKeyById(entry.id);
     if (storageKey == null) return;
-
 
     final titleController = TextEditingController(text: entry.title);
     final detailsController = TextEditingController(text: entry.details);
     final timeController = TextEditingController(text: entry.timeLabel);
     CalendarEntryRecurrence selectedRecurrence = entry.recurrence;
 
-
     RecurrenceEndMode endMode = entry.hasRecurrenceEnd
         ? RecurrenceEndMode.onDate
         : RecurrenceEndMode.never;
-
 
     int endYear = entry.recurrenceEndYear ?? entry.anchorYear;
     int endMonthIndex = entry.recurrenceEndMonthIndex ?? entry.anchorMonthIndex;
     int endDay = entry.recurrenceEndDay ?? entry.anchorDay;
 
-
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
         final title = _typeLabel(entry.type);
-
 
         return StatefulBuilder(
           builder: (context, setDialogState) {
@@ -1163,7 +1049,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         day: endDay,
                       );
 
-
                       if (endOrdinal < anchorOrdinal) return;
                     }
                     Navigator.of(context).pop(true);
@@ -1176,7 +1061,6 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
-
 
     if (confirmed == true) {
       final updatedEntry = CalendarEntry(
@@ -1207,7 +1091,6 @@ class _HomeScreenState extends State<HomeScreen> {
         excludedOrdinals: entry.excludedOrdinals,
       );
 
-
       setState(() {
         final current = entriesByDate[storageKey] ?? [];
         entriesByDate[storageKey] = current
@@ -1215,17 +1098,14 @@ class _HomeScreenState extends State<HomeScreen> {
             .toList();
       });
 
-
       await _persistEntries();
       await _syncNotifications();
     }
   }
 
-
   Future<void> _deleteEntry(String id) async {
     final storageKey = _findEntryStorageKeyById(id);
     if (storageKey == null) return;
-
 
     final current = entriesByDate[storageKey] ?? [];
     final target =
@@ -1234,9 +1114,7 @@ class _HomeScreenState extends State<HomeScreen> {
               orElse: () => null,
             );
 
-
     if (target == null) return;
-
 
     if (target.recurrence == CalendarEntryRecurrence.none) {
       setState(() {
@@ -1247,9 +1125,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-
     if (selectedDay == null) return;
-
 
     final choice = await showDialog<String>(
       context: context,
@@ -1277,7 +1153,6 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     );
 
-
     if (choice == 'series') {
       setState(() {
         entriesByDate[storageKey] = current.where((e) => e.id != id).toList();
@@ -1287,14 +1162,12 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-
     if (choice == 'occurrence') {
       final selectedOrdinal = _customOrdinal(
         year: currentYear,
         monthIndex: currentMonthIndex,
         day: selectedDay!,
       );
-
 
       final updatedEntry = CalendarEntry(
         id: target.id,
@@ -1312,19 +1185,16 @@ class _HomeScreenState extends State<HomeScreen> {
         excludedOrdinals: [...target.excludedOrdinals, selectedOrdinal],
       );
 
-
       setState(() {
         entriesByDate[storageKey] = current
             .map((e) => e.id == id ? updatedEntry : e)
             .toList();
       });
 
-
       await _persistEntries();
       await _syncNotifications();
     }
   }
-
 
   static String _typeLabel(CalendarEntryType type) {
     switch (type) {
@@ -1336,7 +1206,6 @@ class _HomeScreenState extends State<HomeScreen> {
         return 'Alarm';
     }
   }
-
 
   static String _recurrenceLabel(CalendarEntryRecurrence recurrence) {
     switch (recurrence) {
@@ -1353,12 +1222,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-
   String _recurrenceSummary(CalendarEntry entry) {
     if (entry.recurrence == CalendarEntryRecurrence.none) {
       return 'Does not repeat';
     }
-
 
     final base = switch (entry.recurrence) {
       CalendarEntryRecurrence.none => 'Does not repeat',
@@ -1368,15 +1235,12 @@ class _HomeScreenState extends State<HomeScreen> {
       CalendarEntryRecurrence.yearly => 'Repeats yearly',
     };
 
-
     if (!entry.hasRecurrenceEnd) {
       return '$base forever';
     }
 
-
     return '$base until ${entry.recurrenceEndDay} ${CalendarConfig.monthNames[entry.recurrenceEndMonthIndex!]} ${entry.recurrenceEndYear}';
   }
-
 
   void nextPrimary() {
     if (currentViewMode == CalendarViewMode.month) {
@@ -1386,22 +1250,18 @@ class _HomeScreenState extends State<HomeScreen> {
           ) +
           1;
 
-
       int nextYear = nextAbsolute ~/ CalendarConfig.monthNames.length;
       int nextMonthIndex = nextAbsolute % CalendarConfig.monthNames.length;
-
 
       if (nextMonthIndex < 0) {
         nextMonthIndex += CalendarConfig.monthNames.length;
         nextYear -= 1;
       }
 
-
       setState(() {
         selectedDay = null;
         previewDay = null;
       });
-
 
       _jumpMonthListTo(
         year: nextYear,
@@ -1410,7 +1270,6 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       return;
     }
-
 
     setState(() {
       if (currentViewMode == CalendarViewMode.year) {
@@ -1434,7 +1293,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-
   void previousPrimary() {
     if (currentViewMode == CalendarViewMode.month) {
       final previousAbsolute = _absoluteMonthIndex(
@@ -1443,22 +1301,19 @@ class _HomeScreenState extends State<HomeScreen> {
           ) -
           1;
 
-
       int previousYear = previousAbsolute ~/ CalendarConfig.monthNames.length;
-      int previousMonthIndex = previousAbsolute % CalendarConfig.monthNames.length;
-
+      int previousMonthIndex =
+          previousAbsolute % CalendarConfig.monthNames.length;
 
       if (previousMonthIndex < 0) {
         previousMonthIndex += CalendarConfig.monthNames.length;
         previousYear -= 1;
       }
 
-
       setState(() {
         selectedDay = null;
         previewDay = null;
       });
-
 
       _jumpMonthListTo(
         year: previousYear,
@@ -1467,7 +1322,6 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       return;
     }
-
 
     setState(() {
       if (currentViewMode == CalendarViewMode.year) {
@@ -1491,16 +1345,13 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-
   String get displayedYearLabel {
     return CalendarLogic.displayedYearForCulture(currentCulture, currentYear);
   }
 
-
   String get navigationMonthLabel {
     return CalendarConfig.monthNames[currentMonthIndex];
   }
-
 
   void showPlaceholderMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1508,13 +1359,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
   void closeDayView() {
     setState(() {
       currentViewMode = previousViewMode;
     });
   }
-
 
   Widget _buildMonthSelector() {
     return PopupMenuButton<CalendarViewMode>(
@@ -1559,10 +1408,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
   Widget _buildContinuousMonthList() {
     final itemCount = _monthWindowBefore + _monthWindowAfter + 1;
-
 
     return ListView.builder(
       controller: _monthScrollController,
@@ -1572,25 +1419,21 @@ class _HomeScreenState extends State<HomeScreen> {
         final monthRef = _monthRefFromListIndex(index);
         final monthName = CalendarConfig.monthNames[monthRef.monthIndex];
 
-
         final today = CalendarLogic.currentCustomDate();
         final todayDay = today.year == monthRef.year &&
                 today.monthIndex == monthRef.monthIndex
             ? today.day
             : null;
 
-
         final sectionSelectedDay = currentYear == monthRef.year &&
                 currentMonthIndex == monthRef.monthIndex
             ? selectedDay
             : null;
 
-
         final sectionPreviewDay = currentYear == monthRef.year &&
                 currentMonthIndex == monthRef.monthIndex
             ? previewDay
             : null;
-
 
         return SizedBox(
           height: _monthSectionExtent,
@@ -1612,7 +1455,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     final bool isMonthView = currentViewMode == CalendarViewMode.month;
@@ -1621,7 +1463,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final String currentMonthName = CalendarConfig.monthNames[currentMonthIndex];
     final currentEntries = _entriesForCurrentSelection();
     final currentHolidays = _holidaysForCurrentSelection();
-
 
     if (!_storageReady) {
       return const Scaffold(
@@ -1632,7 +1473,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
-
 
     return Scaffold(
       key: scaffoldKey,
@@ -1776,7 +1616,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               currentViewMode = CalendarViewMode.month;
                             });
 
-
                             _jumpMonthListTo(
                               year: currentYear,
                               monthIndex: monthIndex,
@@ -1790,7 +1629,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               previewDay = day;
                               currentViewMode = CalendarViewMode.month;
                             });
-
 
                             _jumpMonthListTo(
                               year: currentYear,
@@ -1822,18 +1660,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-
 class _MonthReference {
   final int year;
   final int monthIndex;
-
 
   const _MonthReference({
     required this.year,
     required this.monthIndex,
   });
 }
-
 
 class _ContinuousMonthSection extends StatelessWidget {
   final String monthName;
@@ -1842,7 +1677,6 @@ class _ContinuousMonthSection extends StatelessWidget {
   final int? todayDay;
   final ValueChanged<int> onDayTap;
 
-
   const _ContinuousMonthSection({
     required this.monthName,
     required this.selectedDay,
@@ -1850,7 +1684,6 @@ class _ContinuousMonthSection extends StatelessWidget {
     required this.todayDay,
     required this.onDayTap,
   });
-
 
   @override
   Widget build(BuildContext context) {
@@ -1900,12 +1733,10 @@ class _ContinuousMonthSection extends StatelessWidget {
               final isPreview = previewDay == day;
               final isToday = todayDay == day;
 
-
               Color backgroundColor = Colors.white;
               Color borderColor = Colors.grey.shade300;
               Color textColor = Colors.black87;
               FontWeight fontWeight = FontWeight.w500;
-
 
               if (isSelected) {
                 backgroundColor = Colors.black87;
@@ -1918,7 +1749,6 @@ class _ContinuousMonthSection extends StatelessWidget {
                 textColor = Colors.black87;
                 fontWeight = FontWeight.w700;
               }
-
 
               return GestureDetector(
                 onTap: () => onDayTap(day),
@@ -1956,13 +1786,10 @@ class _ContinuousMonthSection extends StatelessWidget {
   }
 }
 
-
 class _MiniWeekdayLabel extends StatelessWidget {
   final String label;
 
-
   const _MiniWeekdayLabel(this.label);
-
 
   @override
   Widget build(BuildContext context) {
@@ -1980,5 +1807,3 @@ class _MiniWeekdayLabel extends StatelessWidget {
     );
   }
 }
-
-

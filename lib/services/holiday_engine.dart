@@ -17,6 +17,57 @@ class HolidayEngine {
     HolidayItem(name: "New Year's Eve", gregorianMonth: 12, gregorianDay: 31, profile: 'Gregorian'),
   ];
 
+  static const List<HolidayItem> baseChristianFixedHolidays = [
+    HolidayItem(
+      name: "Circumcision of Christ / Holy Name Day",
+      gregorianMonth: 1,
+      gregorianDay: 1,
+      profile: 'Christian (Ussher Chronology)',
+      accuracyLabel: 'traditional',
+      category: 'Christian holiday',
+    ),
+    HolidayItem(
+      name: "Epiphany",
+      gregorianMonth: 1,
+      gregorianDay: 6,
+      profile: 'Christian (Ussher Chronology)',
+      accuracyLabel: 'traditional',
+      category: 'Christian holiday',
+    ),
+    HolidayItem(
+      name: "Annunciation",
+      gregorianMonth: 3,
+      gregorianDay: 25,
+      profile: 'Christian (Ussher Chronology)',
+      accuracyLabel: 'traditional',
+      category: 'Christian holiday',
+    ),
+    HolidayItem(
+      name: "All Saints' Day",
+      gregorianMonth: 11,
+      gregorianDay: 1,
+      profile: 'Christian (Ussher Chronology)',
+      accuracyLabel: 'traditional',
+      category: 'Christian holiday',
+    ),
+    HolidayItem(
+      name: "Christmas Day",
+      gregorianMonth: 12,
+      gregorianDay: 25,
+      profile: 'Christian (Ussher Chronology)',
+      accuracyLabel: 'traditional',
+      category: 'Christian holiday',
+    ),
+    HolidayItem(
+      name: "St. Stephen's Day",
+      gregorianMonth: 12,
+      gregorianDay: 26,
+      profile: 'Christian (Ussher Chronology)',
+      accuracyLabel: 'traditional',
+      category: 'Christian holiday',
+    ),
+  ];
+
   static int? _nominalGregorianMonthForCustomMonthIndex(int customMonthIndex) {
     const monthMap = <int, int?>{
       0: 4,
@@ -37,8 +88,118 @@ class HolidayEngine {
     return monthMap[customMonthIndex];
   }
 
-  static int _gregorianYearForHolidayInCustomYear(int customYear, int gregorianMonth) {
+  static int _gregorianYearForHolidayInCustomYear(
+    int customYear,
+    int gregorianMonth,
+  ) {
     return gregorianMonth >= 4 ? customYear : customYear + 1;
+  }
+
+  static DateTime _westernEasterSunday(int gregorianYear) {
+    final a = gregorianYear % 19;
+    final b = gregorianYear ~/ 100;
+    final c = gregorianYear % 100;
+    final d = b ~/ 4;
+    final e = b % 4;
+    final f = (b + 8) ~/ 25;
+    final g = (b - f + 1) ~/ 3;
+    final h = (19 * a + b - d - g + 15) % 30;
+    final i = c ~/ 4;
+    final k = c % 4;
+    final l = (32 + 2 * e + 2 * i - h - k) % 7;
+    final m = (a + 11 * h + 22 * l) ~/ 451;
+    final month = (h + l - 7 * m + 114) ~/ 31;
+    final day = ((h + l - 7 * m + 114) % 31) + 1;
+    return DateTime.utc(gregorianYear, month, day);
+  }
+
+  static List<HolidayItem> _christianMovableHolidays(int customYear) {
+    final easterYear = customYear;
+    final easter = _westernEasterSunday(easterYear);
+
+    final palmSunday = easter.subtract(const Duration(days: 7));
+    final maundyThursday = easter.subtract(const Duration(days: 3));
+    final goodFriday = easter.subtract(const Duration(days: 2));
+    final holySaturday = easter.subtract(const Duration(days: 1));
+    final easterMonday = easter.add(const Duration(days: 1));
+    final ascensionDay = easter.add(const Duration(days: 39));
+    final pentecost = easter.add(const Duration(days: 49));
+    final trinitySunday = easter.add(const Duration(days: 56));
+
+    return [
+      HolidayItem(
+        name: "Palm Sunday",
+        gregorianMonth: palmSunday.month,
+        gregorianDay: palmSunday.day,
+        profile: 'Christian (Ussher Chronology)',
+        accuracyLabel: 'traditional',
+        category: 'Christian holiday',
+      ),
+      HolidayItem(
+        name: "Maundy Thursday",
+        gregorianMonth: maundyThursday.month,
+        gregorianDay: maundyThursday.day,
+        profile: 'Christian (Ussher Chronology)',
+        accuracyLabel: 'traditional',
+        category: 'Christian holiday',
+      ),
+      HolidayItem(
+        name: "Good Friday",
+        gregorianMonth: goodFriday.month,
+        gregorianDay: goodFriday.day,
+        profile: 'Christian (Ussher Chronology)',
+        accuracyLabel: 'traditional',
+        category: 'Christian holiday',
+      ),
+      HolidayItem(
+        name: "Holy Saturday",
+        gregorianMonth: holySaturday.month,
+        gregorianDay: holySaturday.day,
+        profile: 'Christian (Ussher Chronology)',
+        accuracyLabel: 'traditional',
+        category: 'Christian holiday',
+      ),
+      HolidayItem(
+        name: "Easter Sunday",
+        gregorianMonth: easter.month,
+        gregorianDay: easter.day,
+        profile: 'Christian (Ussher Chronology)',
+        accuracyLabel: 'traditional',
+        category: 'Christian holiday',
+      ),
+      HolidayItem(
+        name: "Easter Monday",
+        gregorianMonth: easterMonday.month,
+        gregorianDay: easterMonday.day,
+        profile: 'Christian (Ussher Chronology)',
+        accuracyLabel: 'traditional',
+        category: 'Christian holiday',
+      ),
+      HolidayItem(
+        name: "Ascension Day",
+        gregorianMonth: ascensionDay.month,
+        gregorianDay: ascensionDay.day,
+        profile: 'Christian (Ussher Chronology)',
+        accuracyLabel: 'traditional',
+        category: 'Christian holiday',
+      ),
+      HolidayItem(
+        name: "Pentecost",
+        gregorianMonth: pentecost.month,
+        gregorianDay: pentecost.day,
+        profile: 'Christian (Ussher Chronology)',
+        accuracyLabel: 'traditional',
+        category: 'Christian holiday',
+      ),
+      HolidayItem(
+        name: "Trinity Sunday",
+        gregorianMonth: trinitySunday.month,
+        gregorianDay: trinitySunday.day,
+        profile: 'Christian (Ussher Chronology)',
+        accuracyLabel: 'traditional',
+        category: 'Christian holiday',
+      ),
+    ];
   }
 
   static List<HolidayItem> _countryRecurringHolidays(String? country) {
@@ -102,7 +263,10 @@ class HolidayEngine {
     }
   }
 
-  static List<HolidayItem> _countryYearSpecificHolidays(String? country, int customYear) {
+  static List<HolidayItem> _countryYearSpecificHolidays(
+    String? country,
+    int customYear,
+  ) {
     switch (country) {
       case 'South Africa':
         switch (customYear) {
@@ -274,13 +438,43 @@ class HolidayEngine {
     final unique = <HolidayItem>[];
 
     for (final holiday in holidays) {
-      final key = '${holiday.name}|${holiday.gregorianMonth}|${holiday.gregorianDay}|${holiday.country ?? ''}';
+      final key =
+          '${holiday.name}|${holiday.gregorianMonth}|${holiday.gregorianDay}|${holiday.country ?? ''}';
       if (seen.add(key)) {
         unique.add(holiday);
       }
     }
 
     return unique;
+  }
+
+  static List<HolidayItem> getChristianHolidays({
+    required int customYear,
+  }) {
+    final holidays = <HolidayItem>[
+      ...baseChristianFixedHolidays,
+      ..._christianMovableHolidays(customYear),
+    ];
+
+    final seen = <String>{};
+    final unique = <HolidayItem>[];
+
+    for (final holiday in holidays) {
+      final key =
+          '${holiday.name}|${holiday.gregorianMonth}|${holiday.gregorianDay}|${holiday.country ?? ''}';
+      if (seen.add(key)) {
+        unique.add(holiday);
+      }
+    }
+
+    return unique;
+  }
+
+  static String _formatLabelSuffix(HolidayItem holiday) {
+    if (holiday.accuracyLabel == null || holiday.accuracyLabel!.trim().isEmpty) {
+      return '';
+    }
+    return ' (${holiday.accuracyLabel})';
   }
 
   static String _gregorianOffsetLabel({
@@ -300,19 +494,53 @@ class HolidayEngine {
     );
 
     final difference = selectedGregorian.difference(holidayDate).inDays;
+    final suffix = _formatLabelSuffix(holiday);
 
     if (difference == 0) {
-      return '${holiday.name} (Gregorian calendar: same day)';
+      return '${holiday.name}$suffix (Gregorian calendar: same day)';
     }
 
     if (difference > 0) {
       final unit = difference == 1 ? 'day' : 'days';
-      return '${holiday.name} (Gregorian calendar: $difference $unit ago)';
+      return '${holiday.name}$suffix (Gregorian calendar: $difference $unit ago)';
     }
 
     final daysFromNow = difference.abs();
     final unit = daysFromNow == 1 ? 'day' : 'days';
-    return '${holiday.name} (Gregorian calendar: $daysFromNow $unit from now)';
+    return '${holiday.name}$suffix (Gregorian calendar: $daysFromNow $unit from now)';
+  }
+
+  static String _christianOffsetLabel({
+    required DateTime selectedGregorian,
+    required int customYear,
+    required HolidayItem holiday,
+  }) {
+    final holidayYear = _gregorianYearForHolidayInCustomYear(
+      customYear,
+      holiday.gregorianMonth,
+    );
+
+    final holidayDate = DateTime.utc(
+      holidayYear,
+      holiday.gregorianMonth,
+      holiday.gregorianDay,
+    );
+
+    final difference = selectedGregorian.difference(holidayDate).inDays;
+    final suffix = _formatLabelSuffix(holiday);
+
+    if (difference == 0) {
+      return '${holiday.name}$suffix (Gregorian calendar: same day)';
+    }
+
+    if (difference > 0) {
+      final unit = difference == 1 ? 'day' : 'days';
+      return '${holiday.name}$suffix (Gregorian calendar: $difference $unit ago)';
+    }
+
+    final daysFromNow = difference.abs();
+    final unit = daysFromNow == 1 ? 'day' : 'days';
+    return '${holiday.name}$suffix (Gregorian calendar: $daysFromNow $unit from now)';
   }
 
   static List<String> getHolidayNamesForCurrentSelection({
@@ -322,7 +550,7 @@ class HolidayEngine {
     required int customMonthIndex,
     required int? customDay,
   }) {
-    if (profile != 'Gregorian' || customDay == null) {
+    if (customDay == null) {
       return [];
     }
 
@@ -339,24 +567,50 @@ class HolidayEngine {
       customDay,
     );
 
-    final holidays = getGregorianHolidays(
-      country: country,
-      customYear: customYear,
-    );
+    if (profile == 'Gregorian') {
+      final holidays = getGregorianHolidays(
+        country: country,
+        customYear: customYear,
+      );
 
-    return holidays
-        .where(
-          (holiday) =>
-              holiday.gregorianMonth == nominalGregorianMonth &&
-              holiday.gregorianDay == customDay,
-        )
-        .map(
-          (holiday) => _gregorianOffsetLabel(
-            selectedGregorian: selectedGregorian,
-            customYear: customYear,
-            holiday: holiday,
-          ),
-        )
-        .toList();
+      return holidays
+          .where(
+            (holiday) =>
+                holiday.gregorianMonth == nominalGregorianMonth &&
+                holiday.gregorianDay == customDay,
+          )
+          .map(
+            (holiday) => _gregorianOffsetLabel(
+              selectedGregorian: selectedGregorian,
+              customYear: customYear,
+              holiday: holiday,
+            ),
+          )
+          .toList();
+    }
+
+    if (profile == 'Christian' ||
+        profile == 'Christian (Ussher Chronology)') {
+      final holidays = getChristianHolidays(
+        customYear: customYear,
+      );
+
+      return holidays
+          .where(
+            (holiday) =>
+                holiday.gregorianMonth == nominalGregorianMonth &&
+                holiday.gregorianDay == customDay,
+          )
+          .map(
+            (holiday) => _christianOffsetLabel(
+              selectedGregorian: selectedGregorian,
+              customYear: customYear,
+              holiday: holiday,
+            ),
+          )
+          .toList();
+    }
+
+    return [];
   }
 }

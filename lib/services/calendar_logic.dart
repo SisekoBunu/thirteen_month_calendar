@@ -134,13 +134,9 @@ class CalendarLogic {
         final adjusted = cycleYear + config.yearOffset;
         return adjusted.toString();
 
-      case EraSystem.christian:
-        if (cycleYear >= 1) {
-          return '$cycleYear AD';
-        } else {
-          final bcYear = cycleYear.abs() + 1;
-          return '$bcYear BC';
-        }
+      case EraSystem.christianUssher:
+        final adjusted = cycleYear + config.yearOffset;
+        return adjusted.toString();
     }
   }
 }
