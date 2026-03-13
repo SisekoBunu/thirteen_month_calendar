@@ -562,6 +562,27 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  List<String> _timelineEventsForCurrentSelection() {
+    if (currentCulture == 'Christian' ||
+        currentCulture == 'Christian (Ussher Chronology)') {
+      return HolidayEngine.getChristianTimelineEventsForCurrentSelection(
+        customYear: currentYear,
+        customMonthIndex: currentMonthIndex,
+        customDay: selectedDay,
+      );
+    }
+
+    if (currentCulture == 'Islamic') {
+      return HolidayEngine.getIslamicTimelineEventsForCurrentSelection(
+        customYear: currentYear,
+        customMonthIndex: currentMonthIndex,
+        customDay: selectedDay,
+      );
+    }
+
+    return [];
+  }
+
   Future<void> _showAddEntryTypeDialog() async {
     if (selectedDay == null) return;
 
@@ -1463,6 +1484,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final String currentMonthName = CalendarConfig.monthNames[currentMonthIndex];
     final currentEntries = _entriesForCurrentSelection();
     final currentHolidays = _holidaysForCurrentSelection();
+    final currentTimelineEvents = _timelineEventsForCurrentSelection();
 
     if (!_storageReady) {
       return const Scaffold(
@@ -1591,6 +1613,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 selectedDay: selectedDay,
                                 entries: currentEntries,
                                 holidays: currentHolidays,
+                                timelineEvents: currentTimelineEvents,
                                 onAddEntry: _showAddEntryTypeDialog,
                                 onClose: clearSelectedDay,
                                 onEditEntry: _showEditEntryDialog,
@@ -1807,3 +1830,4 @@ class _MiniWeekdayLabel extends StatelessWidget {
     );
   }
 }
+

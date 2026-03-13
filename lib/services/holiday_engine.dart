@@ -1,5 +1,7 @@
 import '../models/holiday_item.dart';
 import 'calendar_logic.dart';
+import 'christian_timeline_service.dart';
+import 'islamic_timeline_service.dart';
 
 class HolidayEngine {
   static const List<HolidayItem> baseGregorianHolidays = [
@@ -65,6 +67,81 @@ class HolidayEngine {
       profile: 'Christian (Ussher Chronology)',
       accuracyLabel: 'traditional',
       category: 'Christian holiday',
+    ),
+  ];
+
+  static const List<HolidayItem> baseIslamicHolidays = [
+    HolidayItem(
+      name: "Islamic New Year",
+      gregorianMonth: 7,
+      gregorianDay: 16,
+      profile: 'Islamic',
+      accuracyLabel: 'traditional',
+      category: 'Islamic holiday',
+    ),
+    HolidayItem(
+      name: "Ashura",
+      gregorianMonth: 7,
+      gregorianDay: 25,
+      profile: 'Islamic',
+      accuracyLabel: 'traditional',
+      category: 'Islamic observance',
+    ),
+    HolidayItem(
+      name: "Mawlid al-Nabi",
+      gregorianMonth: 9,
+      gregorianDay: 16,
+      profile: 'Islamic',
+      accuracyLabel: 'traditional',
+      category: 'Islamic observance',
+    ),
+    HolidayItem(
+      name: "Isra and Mi'raj",
+      gregorianMonth: 2,
+      gregorianDay: 8,
+      profile: 'Islamic',
+      accuracyLabel: 'traditional',
+      category: 'Islamic observance',
+    ),
+    HolidayItem(
+      name: "Ramadan Start",
+      gregorianMonth: 3,
+      gregorianDay: 1,
+      profile: 'Islamic',
+      accuracyLabel: 'traditional',
+      category: 'Islamic observance',
+    ),
+    HolidayItem(
+      name: "Laylat al-Qadr",
+      gregorianMonth: 3,
+      gregorianDay: 27,
+      profile: 'Islamic',
+      accuracyLabel: 'traditional',
+      category: 'Islamic observance',
+    ),
+    HolidayItem(
+      name: "Eid al-Fitr",
+      gregorianMonth: 3,
+      gregorianDay: 30,
+      profile: 'Islamic',
+      accuracyLabel: 'traditional',
+      category: 'Islamic holiday',
+    ),
+    HolidayItem(
+      name: "Day of Arafah",
+      gregorianMonth: 6,
+      gregorianDay: 5,
+      profile: 'Islamic',
+      accuracyLabel: 'traditional',
+      category: 'Islamic observance',
+    ),
+    HolidayItem(
+      name: "Eid al-Adha",
+      gregorianMonth: 6,
+      gregorianDay: 6,
+      profile: 'Islamic',
+      accuracyLabel: 'traditional',
+      category: 'Islamic holiday',
     ),
   ];
 
@@ -543,6 +620,126 @@ class HolidayEngine {
     return '${holiday.name}$suffix (Gregorian calendar: $daysFromNow $unit from now)';
   }
 
+  static List<String> getChristianTimelineEventsForCurrentSelection({
+    required int customYear,
+    required int customMonthIndex,
+    required int? customDay,
+  }) {
+    if (customDay == null) {
+      return [];
+    }
+
+    final nominalGregorianMonth =
+        _nominalGregorianMonthForCustomMonthIndex(customMonthIndex);
+
+    if (nominalGregorianMonth == null) {
+      return [];
+    }
+
+    final selectedGregorian = CalendarLogic.convertCustomToGregorianDate(
+      customYear,
+      customMonthIndex,
+      customDay,
+    );
+
+    final events = ChristianTimelineService.timelineEvents
+        .where(
+          (event) =>
+              event.gregorianMonth == nominalGregorianMonth &&
+              event.gregorianDay == customDay,
+        )
+        .map((event) {
+          final eventYear = _gregorianYearForHolidayInCustomYear(
+            customYear,
+            event.gregorianMonth,
+          );
+
+          final eventDate = DateTime.utc(
+            eventYear,
+            event.gregorianMonth,
+            event.gregorianDay,
+          );
+
+          final difference = selectedGregorian.difference(eventDate).inDays;
+
+          if (difference == 0) {
+            return '${event.name} (${event.accuracyLabel}) (Gregorian calendar: same day)';
+          }
+
+          if (difference > 0) {
+            final unit = difference == 1 ? 'day' : 'days';
+            return '${event.name} (${event.accuracyLabel}) (Gregorian calendar: $difference $unit ago)';
+          }
+
+          final daysFromNow = difference.abs();
+          final unit = daysFromNow == 1 ? 'day' : 'days';
+          return '${event.name} (${event.accuracyLabel}) (Gregorian calendar: $daysFromNow $unit from now)';
+        })
+        .toList();
+
+    return events;
+  }
+
+  static List<String> getIslamicTimelineEventsForCurrentSelection({
+    required int customYear,
+    required int customMonthIndex,
+    required int? customDay,
+  }) {
+    if (customDay == null) {
+      return [];
+    }
+
+    final nominalGregorianMonth =
+        _nominalGregorianMonthForCustomMonthIndex(customMonthIndex);
+
+    if (nominalGregorianMonth == null) {
+      return [];
+    }
+
+    final selectedGregorian = CalendarLogic.convertCustomToGregorianDate(
+      customYear,
+      customMonthIndex,
+      customDay,
+    );
+
+    final events = IslamicTimelineService.timelineEvents
+        .where(
+          (event) =>
+              event.gregorianMonth == nominalGregorianMonth &&
+              event.gregorianDay == customDay,
+        )
+        .map((event) {
+          final eventYear = _gregorianYearForHolidayInCustomYear(
+            customYear,
+            event.gregorianMonth,
+          );
+
+          final eventDate = DateTime.utc(
+            eventYear,
+            event.gregorianMonth,
+            event.gregorianDay,
+          );
+
+          final difference = selectedGregorian.difference(eventDate).inDays;
+
+          if (difference == 0) {
+            return '${event.name} (${event.accuracyLabel}) (Gregorian calendar: same day)';
+          }
+
+          if (difference > 0) {
+            final unit = difference == 1 ? 'day' : 'days';
+            return '${event.name} (${event.accuracyLabel}) (Gregorian calendar: $difference $unit ago)';
+          }
+
+          final daysFromNow = difference.abs();
+          final unit = daysFromNow == 1 ? 'day' : 'days';
+          return '${event.name} (${event.accuracyLabel}) (Gregorian calendar: $daysFromNow $unit from now)';
+        })
+        .toList();
+
+    return events;
+  }
+
   static List<String> getHolidayNamesForCurrentSelection({
     required String profile,
     required String? country,
@@ -603,6 +800,25 @@ class HolidayEngine {
           )
           .map(
             (holiday) => _christianOffsetLabel(
+              selectedGregorian: selectedGregorian,
+              customYear: customYear,
+              holiday: holiday,
+            ),
+          )
+          .toList();
+    }
+
+    if (profile == 'Islamic') {
+      final holidays = baseIslamicHolidays;
+
+      return holidays
+          .where(
+            (holiday) =>
+                holiday.gregorianMonth == nominalGregorianMonth &&
+                holiday.gregorianDay == customDay,
+          )
+          .map(
+            (holiday) => _gregorianOffsetLabel(
               selectedGregorian: selectedGregorian,
               customYear: customYear,
               holiday: holiday,

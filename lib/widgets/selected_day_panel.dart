@@ -10,6 +10,7 @@ class SelectedDayPanel extends StatelessWidget {
   final int? selectedDay;
   final List<CalendarEntry> entries;
   final List<String> holidays;
+  final List<String> timelineEvents;
   final VoidCallback onClose;
   final VoidCallback onAddEntry;
   final void Function(CalendarEntry entry) onEditEntry;
@@ -25,6 +26,7 @@ class SelectedDayPanel extends StatelessWidget {
     required this.selectedDay,
     required this.entries,
     required this.holidays,
+    required this.timelineEvents,
     required this.onClose,
     required this.onAddEntry,
     required this.onEditEntry,
@@ -53,6 +55,11 @@ class SelectedDayPanel extends StatelessWidget {
         entries.where((e) => e.type == CalendarEntryType.reminder).length;
     final alarmCount =
         entries.where((e) => e.type == CalendarEntryType.alarm).length;
+
+    final allObservances = <String>[
+      ...holidays,
+      ...timelineEvents,
+    ];
 
     return Container(
       width: double.infinity,
@@ -142,7 +149,7 @@ class SelectedDayPanel extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'Holidays: ${holidays.length}',
+            'Observances: ${allObservances.length}',
             style: const TextStyle(fontSize: 15, color: Colors.black87),
           ),
           const SizedBox(height: 14),
@@ -256,11 +263,11 @@ class SelectedDayPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          if (holidays.isEmpty)
+          if (allObservances.isEmpty)
             _placeholderCard('No holidays yet')
           else
-            ...holidays.map(
-              (holiday) => Container(
+            ...allObservances.map(
+              (item) => Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -269,7 +276,7 @@ class SelectedDayPanel extends StatelessWidget {
                   border: Border.all(color: const Color(0xFFE3E3E3)),
                 ),
                 child: Text(
-                  holiday,
+                  item,
                   style: const TextStyle(
                     fontSize: 15,
                     color: Colors.black87,
