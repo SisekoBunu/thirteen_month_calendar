@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/calendar_entry.dart';
-import '../services/calendar_logic.dart';
 
 class SelectedDayPanel extends StatelessWidget {
   final String monthName;
@@ -40,15 +39,6 @@ class SelectedDayPanel extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final gregorian = CalendarLogic.convertCustomToGregorianDate(
-      year,
-      monthIndex,
-      selectedDay!,
-    );
-
-    final gregorianLabel =
-        '${gregorian.year}-${gregorian.month.toString().padLeft(2, '0')}-${gregorian.day.toString().padLeft(2, '0')}';
-
     final eventCount =
         entries.where((e) => e.type == CalendarEntryType.event).length;
     final reminderCount =
@@ -64,16 +54,16 @@ class SelectedDayPanel extends StatelessWidget {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(color: Colors.grey.shade300),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -87,8 +77,9 @@ class SelectedDayPanel extends StatelessWidget {
                   'Selected Day',
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: Colors.black54,
+                    letterSpacing: 0.2,
                   ),
                 ),
               ),
@@ -115,7 +106,7 @@ class SelectedDayPanel extends StatelessWidget {
               color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             culture,
             style: const TextStyle(
@@ -124,35 +115,18 @@ class SelectedDayPanel extends StatelessWidget {
               color: Colors.black54,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Gregorian equivalent: $gregorianLabel',
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.black54,
-            ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _statChip('Events', eventCount),
+              _statChip('Reminders', reminderCount),
+              _statChip('Alarms', alarmCount),
+              _statChip('Observances', allObservances.length),
+            ],
           ),
-          const SizedBox(height: 14),
-          Text(
-            'Events: $eventCount',
-            style: const TextStyle(fontSize: 15, color: Colors.black87),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Reminders: $reminderCount',
-            style: const TextStyle(fontSize: 15, color: Colors.black87),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Alarms: $alarmCount',
-            style: const TextStyle(fontSize: 15, color: Colors.black87),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Observances: ${allObservances.length}',
-            style: const TextStyle(fontSize: 15, color: Colors.black87),
-          ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 20),
           const Text(
             'Entries',
             style: TextStyle(
@@ -286,6 +260,25 @@ class SelectedDayPanel extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _statChip(String label, int value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F7F7),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE3E3E3)),
+      ),
+      child: Text(
+        '$label: $value',
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Colors.black87,
+        ),
       ),
     );
   }
