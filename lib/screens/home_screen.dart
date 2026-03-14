@@ -455,64 +455,94 @@ class _InfoDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      child: ListView(
-        children: [
-          const DrawerHeader(
-            child: Align(
-              alignment: Alignment.bottomLeft,
-              child: Text(
-                'MultiCul Calendar App',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+      child: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'MultiCul Calendar App',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    'App tools, information, and startup settings.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.3,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: Text('About $activeCalendarName'),
-            onTap: onAboutTap,
-          ),
-          ListTile(
-            leading: const Icon(Icons.flag_outlined),
-            title: const Text('Choose startup calendar'),
-            onTap: onChooseStartupTap,
-          ),
-          ListTile(
-            leading: const Icon(Icons.star_outline),
-            title: const Text('Rate this app'),
-            onTap: () {
-              Navigator.pop(context);
-              _showPlaceholderDialog(
-                context,
-                title: 'Rate this app',
-                message: 'Rating support will be connected later.',
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.share_outlined),
-            title: const Text('Share with a friend'),
-            onTap: () {
-              Navigator.pop(context);
-              _showPlaceholderDialog(
-                context,
-                title: 'Share with a friend',
-                message: 'Sharing support will be connected later.',
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.favorite_border),
-            title: const Text('Donate'),
-            onTap: () {
-              Navigator.pop(context);
-              _showPlaceholderDialog(
-                context,
-                title: 'Donate',
-                message: 'Donation support will be connected later.',
-              );
-            },
-          ),
-        ],
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+                children: [
+                  _InfoActionCard(
+                    icon: Icons.info_outline,
+                    title: 'About $activeCalendarName',
+                    subtitle: 'Read about the currently selected calendar.',
+                    onTap: onAboutTap,
+                  ),
+                  _InfoActionCard(
+                    icon: Icons.flag_outlined,
+                    title: 'Choose startup calendar',
+                    subtitle: 'Set which calendar opens when the app starts.',
+                    onTap: onChooseStartupTap,
+                  ),
+                  _InfoActionCard(
+                    icon: Icons.star_outline,
+                    title: 'Rate this app',
+                    subtitle: 'Rate support will be connected later.',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showPlaceholderDialog(
+                        context,
+                        title: 'Rate this app',
+                        message: 'Rating support will be connected later.',
+                      );
+                    },
+                  ),
+                  _InfoActionCard(
+                    icon: Icons.share_outlined,
+                    title: 'Share with a friend',
+                    subtitle: 'Sharing support will be connected later.',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showPlaceholderDialog(
+                        context,
+                        title: 'Share with a friend',
+                        message: 'Sharing support will be connected later.',
+                      );
+                    },
+                  ),
+                  _InfoActionCard(
+                    icon: Icons.favorite_border,
+                    title: 'Donate',
+                    subtitle: 'Donation support will be connected later.',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showPlaceholderDialog(
+                        context,
+                        title: 'Donate',
+                        message: 'Donation support will be connected later.',
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -536,6 +566,72 @@ class _InfoDrawer extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _InfoActionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _InfoActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF7F7F7),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: const Color(0xFFE3E3E3)),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: Colors.black87),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        height: 1.3,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Icon(Icons.chevron_right, color: Colors.black54),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
