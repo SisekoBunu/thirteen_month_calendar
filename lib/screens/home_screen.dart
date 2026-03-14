@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../models/calendar_entry.dart';
@@ -17,6 +18,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const String _paypalEmail = 'mrsisekobunu@gmail.com';
+
   bool _startupDialogShown = false;
   CalendarViewMode _viewMode = CalendarViewMode.year;
 
@@ -66,6 +69,10 @@ class _HomeScreenState extends State<HomeScreen> {
           Navigator.pop(context);
           _showStartupCalendarDialog(context, manager);
         },
+        onDonateTap: () {
+          Navigator.pop(context);
+          _showDonateDialog(context);
+        },
       ),
       endDrawer: const AppDrawer(),
       body: SafeArea(
@@ -84,6 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     builder: (context) => IconButton(
                       onPressed: () => Scaffold.of(context).openDrawer(),
                       icon: const Icon(Icons.menu),
+                      tooltip: 'Open menu',
                     ),
                   ),
                   _HeaderNavButton(
@@ -91,25 +99,45 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: manager.goToPreviousMonth,
                   ),
                   Expanded(
-                    child: Column(
+                    child: Row(
                       children: [
-                        Text(
-                          currentHeaderLabel,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
+                        IconButton(
+                          onPressed: () {
+                            _showSearchPlaceholder(context);
+                          },
+                          icon: const Icon(Icons.search),
+                          tooltip: 'Search',
+                        ),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              Text(
+                                currentHeaderLabel,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                _headerSubtitle(engine.displayName),
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _headerSubtitle(engine.displayName),
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black54,
-                          ),
+                        IconButton(
+                          onPressed: () {
+                            _jumpToToday(manager, engine);
+                          },
+                          icon: const Icon(Icons.today_outlined),
+                          tooltip: 'Jump to today',
                         ),
                       ],
                     ),
@@ -122,6 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     builder: (context) => IconButton(
                       onPressed: () => Scaffold.of(context).openEndDrawer(),
                       icon: const Icon(Icons.calendar_month_outlined),
+                      tooltip: 'Choose calendar',
                     ),
                   ),
                 ],
@@ -236,6 +265,35 @@ class _HomeScreenState extends State<HomeScreen> {
           timelineEvents: timelineEvents,
         );
     }
+  }
+
+  void _jumpToToday(CalendarManager manager, dynamic engine) {
+    final today = DateTime.now();
+    engine.selectGregorianDate(today);
+    manager.setSelection(
+      monthIndex: engine.getTodayMonthIndex(),
+      day: null,
+    );
+  }
+
+  void _showSearchPlaceholder(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Search'),
+          content: const Text(
+            'Search will be connected later.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _showStartupCalendarDialog(
@@ -367,28 +425,180 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showDonateDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          insetPadding: const EdgeInsets.all(20),
+          contentPadding: const EdgeInsets.all(0),
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Donate',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF7F7F7),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE3E3E3)),
+                      ),
+                      child: const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Support the MultiCul Calendar App',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            'If you enjoy using this app and would like to support its continued development, you can make a small donation. Contributions help maintain and improve the project so it can keep growing over time.',
+                            style: TextStyle(
+                              fontSize: 15,
+                              height: 1.4,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF7F7F7),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE3E3E3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              Icon(Icons.account_balance_wallet_outlined,
+                                  color: Colors.black87),
+                              SizedBox(width: 10),
+                              Text(
+                                'PayPal',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'Works internationally. You can use PayPal to send a donation.',
+                            style: TextStyle(
+                              fontSize: 15,
+                              height: 1.35,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                await Clipboard.setData(
+                                  const ClipboardData(text: _paypalEmail),
+                                );
+                                if (!mounted) return;
+                                Navigator.pop(dialogContext);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('PayPal email copied.'),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.copy_outlined),
+                              label: const Text('Copy PayPal email'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFEDEAF0),
+                                foregroundColor: Colors.black87,
+                                elevation: 0,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(18),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          const Text(
+                            'How to donate:',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            '• Tap "Copy PayPal email".\n'
+                            '• Open PayPal.\n'
+                            '• Paste the copied email address.\n'
+                            '• Send any amount you feel comfortable with.',
+                            style: TextStyle(
+                              fontSize: 15,
+                              height: 1.5,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   static String _aboutTextForCalendar(String calendarName) {
     switch (calendarName) {
       case 'Gregorian':
-        return 'Gregorian is a standalone calendar in MultiCul Calendar App. '
-            'It keeps its own structure, naming, year system, observances, and cultural identity.\n\n'
-            'What it shares with the rest of the app is the design and navigation style, not its internal truth.';
+        return 'The Gregorian calendar was introduced in 1582 by Pope Gregory XIII as a reform of the older Julian calendar.';
       case 'Christian (Ussher Chronology)':
-        return 'Christian (Ussher Chronology) is a standalone calendar in MultiCul Calendar App. '
-            'It keeps its own structure, naming, year system, observances, and cultural identity.\n\n'
-            'What it shares with the rest of the app is the design and navigation style, not its internal truth.';
+        return 'This calendar follows Archbishop James Ussher’s biblical chronology, which counts years from creation and places it at 4004 BC.';
       case 'Islamic (Hijri)':
-        return 'Islamic (Hijri) is a standalone calendar in MultiCul Calendar App. '
-            'It keeps its own structure, naming, year system, observances, and cultural identity.\n\n'
-            'What it shares with the rest of the app is the design and navigation style, not its internal truth.';
+        return 'The Islamic Hijri calendar begins from the Hijra in 622 CE and follows a lunar year used in Islamic tradition.';
       case '13-Month Calendar':
-        return '13-Month Calendar is a standalone calendar in MultiCul Calendar App. '
-            'It keeps its own structure, naming, year system, observances, and cultural identity.\n\n'
-            'What it shares with the rest of the app is the design and navigation style, not its internal truth.';
+        return 'The 13-Month Calendar is a fixed standalone calendar design built around thirteen months of twenty-eight days, including Sol. Its regular structure creates four exact weeks in every month, so when arranged to begin on Monday, each 1st falls on a Monday.';
       default:
-        return 'This calendar is a standalone calendar in MultiCul Calendar App. '
-            'It keeps its own structure, naming, year system, observances, and cultural identity.\n\n'
-            'What it shares with the rest of the app is the design and navigation style, not its internal truth.';
+        return 'This is a standalone calendar with its own history and structure.';
     }
   }
 
@@ -445,11 +655,13 @@ class _InfoDrawer extends StatelessWidget {
   final String activeCalendarName;
   final VoidCallback onAboutTap;
   final VoidCallback onChooseStartupTap;
+  final VoidCallback onDonateTap;
 
   const _InfoDrawer({
     required this.activeCalendarName,
     required this.onAboutTap,
     required this.onChooseStartupTap,
+    required this.onDonateTap,
   });
 
   @override
@@ -490,7 +702,7 @@ class _InfoDrawer extends StatelessWidget {
                   _InfoActionCard(
                     icon: Icons.info_outline,
                     title: 'About $activeCalendarName',
-                    subtitle: 'Read about the currently selected calendar.',
+                    subtitle: 'Read a short background note about this calendar.',
                     onTap: onAboutTap,
                   ),
                   _InfoActionCard(
@@ -502,7 +714,7 @@ class _InfoDrawer extends StatelessWidget {
                   _InfoActionCard(
                     icon: Icons.star_outline,
                     title: 'Rate this app',
-                    subtitle: 'Rate support will be connected later.',
+                    subtitle: 'Rating support will be connected later.',
                     onTap: () {
                       Navigator.pop(context);
                       _showPlaceholderDialog(
@@ -528,15 +740,8 @@ class _InfoDrawer extends StatelessWidget {
                   _InfoActionCard(
                     icon: Icons.favorite_border,
                     title: 'Donate',
-                    subtitle: 'Donation support will be connected later.',
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showPlaceholderDialog(
-                        context,
-                        title: 'Donate',
-                        message: 'Donation support will be connected later.',
-                      );
-                    },
+                    subtitle: 'Support the continued development of this app.',
+                    onTap: onDonateTap,
                   ),
                 ],
               ),
