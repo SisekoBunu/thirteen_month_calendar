@@ -7,8 +7,8 @@ import '../models/calendar_type.dart';
 import '../models/calendar_view_mode.dart';
 import '../services/calendar_manager.dart';
 import '../widgets/app_drawer.dart';
-import '../widgets/selected_day_panel.dart';
 import '../widgets/entry_editor_dialog.dart';
+import '../widgets/selected_day_panel.dart';
 import '../widgets/year_overview_grid.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -53,8 +53,16 @@ class _HomeScreenState extends State<HomeScreen> {
       day: selectedDay,
     );
 
-    final currentHeaderLabel =
-        "${months[selectedMonthIndex]} ${engine.getDisplayYear()}";
+    final currentHeaderLabel = " ";
+
+    final entriesForSelectedDate = selectedDay == null
+        ? const <CalendarEntry>[]
+        : manager.getEntriesForDate(
+            culture: engine.displayName,
+            year: panelYear,
+            monthIndex: selectedMonthIndex,
+            day: selectedDay,
+          );
 
     final showSelectedDayPanel =
         selectedDay != null && _viewMode != CalendarViewMode.month;
@@ -187,65 +195,62 @@ class _HomeScreenState extends State<HomeScreen> {
                 culture: engine.displayName,
                 monthIndex: selectedMonthIndex,
                 selectedDay: selectedDay,
-                entries: const <CalendarEntry>[],
+                entries: entriesForSelectedDate,
                 holidays: holidays,
                 timelineEvents: timelineEvents,
                 onClose: () {
                   manager.setSelectedDayValue(null);
                 },
                 onAddEntry: () async {
-  if (selectedDay == null) return;
+                  if (selectedDay == null) return;
 
-  final result = await showDialog<CalendarEntry>(
-    context: context,
-    builder: (context) => EntryEditorDialog(
-      year: panelYear,
-      monthIndex: selectedMonthIndex,
-      day: selectedDay,
-    ),
-  );
+                  final result = await showDialog<CalendarEntry>(
+                    context: context,
+                    builder: (context) => EntryEditorDialog(
+                      year: panelYear,
+                      monthIndex: selectedMonthIndex,
+                      day: selectedDay,
+                    ),
+                  );
 
-  if (result == null) return;
+                  if (result == null) return;
 
-  await manager.addEntry(
-    culture: engine.displayName,
-    year: panelYear,
-    monthIndex: selectedMonthIndex,
-    day: selectedDay,
-    entry: result,
-  );
-},
+                  await manager.addEntry(
+                    culture: engine.displayName,
+                    year: panelYear,
+                    monthIndex: selectedMonthIndex,
+                    day: selectedDay,
+                    entry: result,
+                  );
+                },
+                onEditEntry: (entry) async {
+                  if (selectedDay == null) return;
 
-onEditEntry: (entry) async {
-  if (selectedDay == null) return;
+                  final result = await showDialog<CalendarEntry>(
+                    context: context,
+                    builder: (context) => EntryEditorDialog(
+                      existing: entry,
+                      year: panelYear,
+                      monthIndex: selectedMonthIndex,
+                      day: selectedDay,
+                    ),
+                  );
 
-  final result = await showDialog<CalendarEntry>(
-    context: context,
-    builder: (context) => EntryEditorDialog(
-      existing: entry,
-      year: panelYear,
-      monthIndex: selectedMonthIndex,
-      day: selectedDay,
-    ),
-  );
+                  if (result == null) return;
 
-  if (result == null) return;
-
-  await manager.updateEntry(
-    culture: engine.displayName,
-    year: panelYear,
-    monthIndex: selectedMonthIndex,
-    day: selectedDay,
-    entry: result,
-  );
-},
-
-onDeleteEntry: (id) async {
-  await manager.deleteEntry(id);
-},
-
-recurrenceSummaryBuilder: (entry) =>
-    manager.buildRecurrenceSummary(entry),
+                  await manager.updateEntry(
+                    culture: engine.displayName,
+                    year: panelYear,
+                    monthIndex: selectedMonthIndex,
+                    day: selectedDay,
+                    entry: result,
+                  );
+                },
+                onDeleteEntry: (id) async {
+                  await manager.deleteEntry(id);
+                },
+                recurrenceSummaryBuilder: (entry) =>
+                    manager.buildRecurrenceSummary(entry),
               ),
           ],
         ),
@@ -285,6 +290,9 @@ recurrenceSummaryBuilder: (entry) =>
               monthIndex: monthIndex,
               day: day,
             );
+            setState(() {
+              _viewMode = CalendarViewMode.day;
+            });
           },
         );
 
@@ -298,15 +306,14 @@ recurrenceSummaryBuilder: (entry) =>
           todayDay: engine.getTodayDay(),
           selectedMonthIndex: selectedMonthIndex,
           onDayTap: (day) {
-  manager.selectCalendarDate(
-    monthIndex: selectedMonthIndex,
-    day: day,
-  );
-
-  setState(() {
-    _viewMode = CalendarViewMode.day;
-  });
-},
+            manager.selectCalendarDate(
+              monthIndex: selectedMonthIndex,
+              day: day,
+            );
+            setState(() {
+              _viewMode = CalendarViewMode.day;
+            });
+          },
         );
 
       case CalendarViewMode.day:
@@ -988,7 +995,7 @@ class _MonthViewPanel extends StatelessWidget {
             return Column(
               children: [
                 Text(
-                  '$monthName $year',
+                  monthName,
                   style: TextStyle(
                     fontSize: titleSize,
                     fontWeight: FontWeight.w700,
@@ -1101,8 +1108,9 @@ class _DayViewPanel extends StatelessWidget {
                   ),
                 ),
               )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            : SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     '$monthName $selectedDay, $year',
@@ -1161,7 +1169,8 @@ class _DayViewPanel extends StatelessWidget {
                         ),
                       ),
                     ),
-                ],
+                  ],
+                ),
               ),
       ),
     );
@@ -1276,6 +1285,7 @@ class _StartupCalendarCard extends StatelessWidget {
     );
   }
 }
+
 
 
 

@@ -8,7 +8,6 @@ import '../models/calendar_view_mode.dart';
 import '../services/calendar_manager.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/selected_day_panel.dart';
-import '../widgets/entry_editor_dialog.dart';
 import '../widgets/year_overview_grid.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -193,59 +192,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 onClose: () {
                   manager.setSelectedDayValue(null);
                 },
-                onAddEntry: () async {
-  if (selectedDay == null) return;
-
-  final result = await showDialog<CalendarEntry>(
-    context: context,
-    builder: (context) => EntryEditorDialog(
-      year: panelYear,
-      monthIndex: selectedMonthIndex,
-      day: selectedDay,
-    ),
-  );
-
-  if (result == null) return;
-
-  await manager.addEntry(
-    culture: engine.displayName,
-    year: panelYear,
-    monthIndex: selectedMonthIndex,
-    day: selectedDay,
-    entry: result,
-  );
-},
-
-onEditEntry: (entry) async {
-  if (selectedDay == null) return;
-
-  final result = await showDialog<CalendarEntry>(
-    context: context,
-    builder: (context) => EntryEditorDialog(
-      existing: entry,
-      year: panelYear,
-      monthIndex: selectedMonthIndex,
-      day: selectedDay,
-    ),
-  );
-
-  if (result == null) return;
-
-  await manager.updateEntry(
-    culture: engine.displayName,
-    year: panelYear,
-    monthIndex: selectedMonthIndex,
-    day: selectedDay,
-    entry: result,
-  );
-},
-
-onDeleteEntry: (id) async {
-  await manager.deleteEntry(id);
-},
-
-recurrenceSummaryBuilder: (entry) =>
-    manager.buildRecurrenceSummary(entry),
+                onAddEntry: () {},
+                onEditEntry: (entry) {},
+                onDeleteEntry: (id) async {},
+                recurrenceSummaryBuilder: (entry) => '',
               ),
           ],
         ),
@@ -298,15 +248,11 @@ recurrenceSummaryBuilder: (entry) =>
           todayDay: engine.getTodayDay(),
           selectedMonthIndex: selectedMonthIndex,
           onDayTap: (day) {
-  manager.selectCalendarDate(
-    monthIndex: selectedMonthIndex,
-    day: day,
-  );
-
-  setState(() {
-    _viewMode = CalendarViewMode.day;
-  });
-},
+            manager.selectCalendarDate(
+              monthIndex: selectedMonthIndex,
+              day: day,
+            );
+          },
         );
 
       case CalendarViewMode.day:
@@ -1276,10 +1222,3 @@ class _StartupCalendarCard extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
-
-
