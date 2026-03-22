@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'event_editor_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -187,7 +188,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 culture: engine.displayName,
                 monthIndex: selectedMonthIndex,
                 selectedDay: selectedDay,
-                entries: const <CalendarEntry>[],
+                entries: manager.getEntriesForDate(
+  culture: engine.displayName,
+  year: panelYear,
+  monthIndex: selectedMonthIndex,
+  day: selectedDay!,
+),
                 holidays: holidays,
                 timelineEvents: timelineEvents,
                 onClose: () {
@@ -196,38 +202,41 @@ class _HomeScreenState extends State<HomeScreen> {
                 onAddEntry: () async {
   if (selectedDay == null) return;
 
-  final result = await showDialog<CalendarEntry>(
-    context: context,
-    builder: (context) => EntryEditorDialog(
+  final result = await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (_) => EventEditorScreen(
       year: panelYear,
       monthIndex: selectedMonthIndex,
-      day: selectedDay,
+      day: selectedDay!,
     ),
-  );
+  ),
+);
 
   if (result == null) return;
 
   await manager.addEntry(
-    culture: engine.displayName,
-    year: panelYear,
-    monthIndex: selectedMonthIndex,
-    day: selectedDay,
-    entry: result,
-  );
+  culture: engine.displayName,
+  year: result.anchorYear,
+  monthIndex: result.anchorMonthIndex,
+  day: result.anchorDay,
+  entry: result,
+);
 },
 
 onEditEntry: (entry) async {
   if (selectedDay == null) return;
 
-  final result = await showDialog<CalendarEntry>(
-    context: context,
-    builder: (context) => EntryEditorDialog(
-      existing: entry,
+  final result = await Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (_) => EventEditorScreen(
       year: panelYear,
       monthIndex: selectedMonthIndex,
-      day: selectedDay,
+      day: selectedDay!,
     ),
-  );
+  ),
+);
 
   if (result == null) return;
 
@@ -1276,6 +1285,12 @@ class _StartupCalendarCard extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+
 
 
 

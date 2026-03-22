@@ -20,14 +20,19 @@ class EntryEditorDialog extends StatefulWidget {
 }
 
 class _EntryEditorDialogState extends State<EntryEditorDialog> {
-  final TextEditingController _titleController = TextEditingController();
+  final _titleController = TextEditingController();
+  final _detailsController = TextEditingController();
+
   CalendarEntryType _selectedType = CalendarEntryType.event;
+  TimeOfDay? _selectedTime;
 
   @override
   void initState() {
     super.initState();
+
     if (widget.existing != null) {
       _titleController.text = widget.existing!.title;
+      _detailsController.text = widget.existing!.details;
       _selectedType = widget.existing!.type;
     }
   }
@@ -35,46 +40,82 @@ class _EntryEditorDialogState extends State<EntryEditorDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.existing == null ? "Add Entry" : "Edit Entry"),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          DropdownButton<CalendarEntryType>(
-            value: _selectedType,
-            isExpanded: true,
-            onChanged: (value) {
-              setState(() {
-                _selectedType = value!;
-              });
-            },
-            items: CalendarEntryType.values.map((type) {
-              return DropdownMenuItem(
-                value: type,
-                child: Text(type.name.toUpperCase()),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: _titleController,
-            decoration: const InputDecoration(labelText: "Title"),
-          ),
-        ],
+      title: const Text('Add Entry'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButton<CalendarEntryType>(
+              value: _selectedType,
+              isExpanded: true,
+              onChanged: (value) {
+                setState(() => _selectedType = value!);
+              },
+              items: CalendarEntryType.values.map((type) {
+                return DropdownMenuItem(
+                  value: type,
+                  child: Text(type.name.toUpperCase()),
+                );
+              }).toList(),
+            ),
+
+            const SizedBox(height: 10),
+
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
+
+            const SizedBox(height: 10),
+
+            TextField(
+              controller: _detailsController,
+              decoration: const InputDecoration(labelText: 'Details'),
+            ),
+
+            const SizedBox(height: 10),
+
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _selectedTime != null
+                        ? _selectedTime!.format(context)
+                        : 'No time selected',
+                  ),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (picked != null) {
+                      setState(() => _selectedTime = picked);
+                    }
+                  },
+                  child: const Text('Pick Time'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Cancel"),
+          child: const Text('Cancel'),
         ),
         ElevatedButton(
           onPressed: () {
             final entry = CalendarEntry(
-              id: widget.existing?.id ??
-                  DateTime.now().millisecondsSinceEpoch.toString(),
+              id: DateTime.now().millisecondsSinceEpoch.toString(),
               type: _selectedType,
               title: _titleController.text,
-              details: "",
-              timeLabel: "",
+              details: _detailsController.text,
+              timeLabel: _selectedTime != null
+                  ? _selectedTime!.format(context)
+                  : "",
               recurrence: CalendarEntryRecurrence.none,
               anchorYear: widget.year,
               anchorMonthIndex: widget.monthIndex,
@@ -87,7 +128,7 @@ class _EntryEditorDialogState extends State<EntryEditorDialog> {
 
             Navigator.pop(context, entry);
           },
-          child: const Text("Save"),
+          child: const Text('Save'),
         ),
       ],
     );

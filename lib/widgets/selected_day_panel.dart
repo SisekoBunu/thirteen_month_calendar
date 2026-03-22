@@ -68,7 +68,7 @@ class SelectedDayPanel extends StatelessWidget {
               ],
             ),
 
-            Text(" , "),
+            
             const SizedBox(height: 10),
 
             if (entries.isEmpty)
@@ -76,6 +76,14 @@ class SelectedDayPanel extends StatelessWidget {
             else
               ...entries.map((e) => ListTile(
                     title: Text(e.title),
+subtitle: Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    if (e.timeLabel.isNotEmpty) Text(e.timeLabel),
+    if (e.details.isNotEmpty) Text(e.details),
+    Text(recurrenceSummaryBuilder(e)),
+  ],
+),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete),
                       onPressed: () => onDeleteEntry(e.id),
@@ -87,3 +95,11 @@ class SelectedDayPanel extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+
+
+
