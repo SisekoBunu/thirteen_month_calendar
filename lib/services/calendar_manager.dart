@@ -283,7 +283,34 @@ class CalendarManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deleteEntry(String id) async {
+  
+Future<void> deleteSingleOccurrence({
+  required String culture,
+  required CalendarEntry entry,
+  required int year,
+  required int monthIndex,
+  required int day,
+}) async {
+  final ordinal = _ordinalForCulture(
+    culture: culture,
+    year: year,
+    monthIndex: monthIndex,
+    day: day,
+  );
+
+  final updated = entry.copyWith(
+    excludedOrdinals: [...entry.excludedOrdinals, ordinal],
+  );
+
+  await updateEntry(
+    culture: culture,
+    year: entry.anchorYear,
+    monthIndex: entry.anchorMonthIndex,
+    day: entry.anchorDay,
+    entry: updated,
+  );
+}
+Future<void> deleteEntry(String id) async {
     _removeEntryById(id);
     await NotificationManager.cancelByEntryId(id);
     await _persistEntries();
@@ -506,5 +533,6 @@ class CalendarManager extends ChangeNotifier {
   
   
   }
+
 
 

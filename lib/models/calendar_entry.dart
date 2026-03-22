@@ -1,4 +1,4 @@
-﻿enum CalendarEntryType { event, reminder, alarm }
+enum CalendarEntryType { event, reminder, alarm }
 
 enum CalendarEntryRecurrence { none, daily, weekly, monthly, yearly }
 
@@ -81,4 +81,38 @@ class CalendarEntry {
           .toList(),
     );
   }
+
+  CalendarEntry copyWith({
+    String? id,
+    CalendarEntryType? type,
+    String? title,
+    String? details,
+    String? timeLabel,
+    CalendarEntryRecurrence? recurrence,
+    int? anchorYear,
+    int? anchorMonthIndex,
+    int? anchorDay,
+    int? recurrenceEndYear,
+    int? recurrenceEndMonthIndex,
+    int? recurrenceEndDay,
+    List<int>? excludedOrdinals,
+  }) {
+    return CalendarEntry(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      title: title ?? this.title,
+      details: details ?? this.details,
+      timeLabel: timeLabel ?? this.timeLabel,
+      recurrence: recurrence ?? this.recurrence,
+      anchorYear: anchorYear ?? this.anchorYear,
+      anchorMonthIndex: anchorMonthIndex ?? this.anchorMonthIndex,
+      anchorDay: anchorDay ?? this.anchorDay,
+      recurrenceEndYear: recurrenceEndYear ?? this.recurrenceEndYear,
+      recurrenceEndMonthIndex:
+          recurrenceEndMonthIndex ?? this.recurrenceEndMonthIndex,
+      recurrenceEndDay: recurrenceEndDay ?? this.recurrenceEndDay,
+      excludedOrdinals: excludedOrdinals ?? this.excludedOrdinals,
+    );
+  }
+
 }

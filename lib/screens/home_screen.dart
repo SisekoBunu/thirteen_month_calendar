@@ -249,8 +249,40 @@ onEditEntry: (entry) async {
   );
 },
 
-onDeleteEntry: (id) async {
-  await manager.deleteEntry(id);
+onDeleteEntry: (CalendarEntry entry) async {
+  final choice = await showDialog<String>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Delete Event'),
+      content: const Text('Delete this event or entire series?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, 'single'),
+          child: const Text('This Event'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, 'all'),
+          child: const Text('Entire Series'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, null),
+          child: const Text('Cancel'),
+        ),
+      ],
+    ),
+  );
+
+  if (choice == 'single') {
+    await manager.deleteSingleOccurrence(
+      culture: engine.displayName,
+      entry: entry,
+      year: panelYear,
+      monthIndex: selectedMonthIndex,
+      day: selectedDay!,
+    );
+  } else if (choice == 'all') {
+    await manager.deleteEntry(entry.id);
+  }
 },
 
 recurrenceSummaryBuilder: (entry) =>
@@ -1285,6 +1317,11 @@ class _StartupCalendarCard extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
 
 
 

@@ -13,7 +13,7 @@ class SelectedDayPanel extends StatelessWidget {
   final VoidCallback onClose;
   final VoidCallback onAddEntry;
   final void Function(CalendarEntry entry) onEditEntry;
-  final Future<void> Function(String id) onDeleteEntry;
+  final Future<void> Function(CalendarEntry entry) onDeleteEntry;
   final String Function(CalendarEntry entry) recurrenceSummaryBuilder;
 
   const SelectedDayPanel({
@@ -86,7 +86,7 @@ subtitle: Column(
 ),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete),
-                      onPressed: () => onDeleteEntry(e.id),
+                      onPressed: () => onDeleteEntry(e),
                     ),
                   )),
           ],
@@ -95,6 +95,9 @@ subtitle: Column(
     );
   }
 }
+
+
+
 
 
 
