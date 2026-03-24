@@ -234,6 +234,11 @@ class CalendarManager extends ChangeNotifier {
     return [
       ...directEntries,
       ...recurringMatches,
+      ..._getGregorianSystemObservances(
+        year: year,
+        monthIndex: monthIndex,
+        day: day,
+      ),
     ];
   }
 
@@ -532,7 +537,50 @@ Future<void> deleteEntry(String id) async {
   
   
   
-  }
+  
+  List<CalendarEntry> _getGregorianSystemObservances({
+    required int year,
+    required int monthIndex,
+    required int day,
+  }) {
+    if (_activeType != CalendarType.gregorian) return [];
 
+    final data = [
+      {"m":1,"d":1,"t":"New Year's Day","desc":"Start of the year"},
+      {"m":2,"d":14,"t":"Valentine's Day","desc":"Celebration of love"},
+      {"m":3,"d":8,"t":"International Women's Day","desc":"Global observance"},
+      {"m":4,"d":22,"t":"Earth Day","desc":"Environmental awareness"},
+      {"m":5,"d":1,"t":"International Workers' Day","desc":"Labour movement"},
+      {"m":6,"d":21,"t":"International Day of Yoga","desc":"Wellness and health"},
+      {"m":8,"d":12,"t":"International Youth Day","desc":"Youth awareness"},
+      {"m":9,"d":21,"t":"International Day of Peace","desc":"Peace awareness"},
+      {"m":10,"d":31,"t":"Halloween","desc":"Cultural observance"},
+      {"m":11,"d":20,"t":"Universal Children's Day","desc":"Child welfare"},
+      {"m":12,"d":25,"t":"Christmas Day","desc":"Global holiday"},
+    ];
+
+    final matches = data.where((e) =>
+      e["m"] == (monthIndex + 1) && e["d"] == day
+    );
+
+    return matches.map((e) {
+      return CalendarEntry(
+        id: "sys__",
+        type: CalendarEntryType.event,
+        title: e["t"] as String,
+        details: e["desc"] as String,
+        timeLabel: "",
+        recurrence: CalendarEntryRecurrence.yearly,
+        anchorYear: year,
+        anchorMonthIndex: monthIndex,
+        anchorDay: day,
+        recurrenceEndYear: null,
+        recurrenceEndMonthIndex: null,
+        recurrenceEndDay: null,
+        excludedOrdinals: const [],
+      );
+    }).toList();
+  }
+}
 
 
