@@ -234,11 +234,6 @@ class CalendarManager extends ChangeNotifier {
     return [
       ...directEntries,
       ...recurringMatches,
-      ..._getGregorianSystemObservances(
-        year: year,
-        monthIndex: monthIndex,
-        day: day,
-      ),
     ];
   }
 
@@ -582,5 +577,6 @@ Future<void> deleteEntry(String id) async {
     }).toList();
   }
 }
+
 
 

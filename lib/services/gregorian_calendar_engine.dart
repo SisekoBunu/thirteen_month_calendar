@@ -136,7 +136,44 @@ class GregorianCalendarEngine implements CalendarEngine {
       holidays.add("Boxing Day");
     }
 
-    return holidays;
+      final month = monthIndex + 1;
+
+  int nthSunday(int m, int nth) {
+    final first = DateTime(year, m, 1);
+    final offset = (DateTime.sunday - first.weekday + 7) % 7;
+    return 1 + offset + (nth - 1) * 7;
+  }
+
+  int lastFriday(int m) {
+    final last = DateTime(year, m + 1, 0);
+    final offset = (last.weekday - DateTime.friday + 7) % 7;
+    return last.day - offset;
+  }
+
+  if (month == 2 && day == 14) holidays.add("Valentine's Day");
+  if (month == 3 && day == 8) holidays.add("International Women's Day");
+  if (month == 4 && day == 22) holidays.add("Earth Day");
+  if (month == 5 && day == 1) holidays.add("International Workers' Day");
+  if (month == 6 && day == 21) holidays.add("International Day of Yoga");
+  if (month == 8 && day == 12) holidays.add("International Youth Day");
+  if (month == 9 && day == 21) holidays.add("International Day of Peace");
+  if (month == 10 && day == 31) holidays.add("Halloween");
+  if (month == 11 && day == 11) holidays.add("Remembrance Day");
+  if (month == 11 && day == 20) holidays.add("Universal Children's Day");
+
+  if (month == 5 && day == nthSunday(5, 2)) {
+    holidays.add("Mother's Day");
+  }
+
+  if (month == 6 && day == nthSunday(6, 3)) {
+    holidays.add("Father's Day");
+  }
+
+  if (month == 11 && day == lastFriday(11)) {
+    holidays.add("Black Friday");
+  }
+
+  return holidays;
   }
 
   @override
@@ -148,3 +185,4 @@ class GregorianCalendarEngine implements CalendarEngine {
     return const [];
   }
 }
+
