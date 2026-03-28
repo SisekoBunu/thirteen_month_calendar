@@ -118,25 +118,14 @@ class GregorianCalendarEngine implements CalendarEngine {
 
   @override
   List<String> getHolidaysForDate({
-    required int year,
-    required int monthIndex,
-    required int? day,
-  }) {
-    if (day == null) return const [];
+  required int year,
+  required int monthIndex,
+  required int? day,
+}) {
+  if (day == null) return const [];
 
-    final holidays = <String>[];
-
-    if (monthIndex == 0 && day == 1) {
-      holidays.add("New Year's Day");
-    }
-    if (monthIndex == 11 && day == 25) {
-      holidays.add("Christmas Day");
-    }
-    if (monthIndex == 11 && day == 26) {
-      holidays.add("Boxing Day");
-    }
-
-      final month = monthIndex + 1;
+  final holidays = <String>[];
+  final month = monthIndex + 1;
 
   int nthSunday(int m, int nth) {
     final first = DateTime(year, m, 1);
@@ -150,6 +139,10 @@ class GregorianCalendarEngine implements CalendarEngine {
     return last.day - offset;
   }
 
+  // Fixed dates
+  if (month == 1 && day == 1) holidays.add("New Year's Day");
+  if (month == 12 && day == 25) holidays.add("Christmas Day");
+  if (month == 12 && day == 26) holidays.add("Boxing Day");
   if (month == 2 && day == 14) holidays.add("Valentine's Day");
   if (month == 3 && day == 8) holidays.add("International Women's Day");
   if (month == 4 && day == 22) holidays.add("Earth Day");
@@ -161,6 +154,7 @@ class GregorianCalendarEngine implements CalendarEngine {
   if (month == 11 && day == 11) holidays.add("Remembrance Day");
   if (month == 11 && day == 20) holidays.add("Universal Children's Day");
 
+  // Floating dates
   if (month == 5 && day == nthSunday(5, 2)) {
     holidays.add("Mother's Day");
   }
@@ -174,7 +168,7 @@ class GregorianCalendarEngine implements CalendarEngine {
   }
 
   return holidays;
-  }
+}
 
   @override
   List<String> getTimelineEventsForDate({
@@ -185,4 +179,7 @@ class GregorianCalendarEngine implements CalendarEngine {
     return const [];
   }
 }
+
+
+
 

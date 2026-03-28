@@ -54,6 +54,8 @@ class YearOverviewGrid extends StatelessWidget {
             ),
             itemBuilder: (context, monthIndex) {
               final monthDays = daysInMonth(monthIndex);
+              final year = DateTime.now().year;
+              final startOffset = DateTime(year, monthIndex + 1, 1).weekday - 1;
               final isSelectedMonth = monthIndex == selectedMonthIndex;
 
               return AnimatedContainer(
@@ -116,7 +118,7 @@ class YearOverviewGrid extends StatelessWidget {
                     Expanded(
                       child: GridView.builder(
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: monthDays,
+                        itemCount: monthDays + startOffset,
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 7,
@@ -125,7 +127,8 @@ class YearOverviewGrid extends StatelessWidget {
                           childAspectRatio: 1,
                         ),
                         itemBuilder: (context, dayIndex) {
-                          final day = dayIndex + 1;
+                          if (dayIndex < startOffset) return const SizedBox.shrink();
+                          final day = dayIndex - startOffset + 1;
 
                           final isSelectedDay =
                               isSelectedMonth && selectedDay == day;
