@@ -23,11 +23,11 @@ class CalendarManager extends ChangeNotifier {
   CalendarType _activeType;
 
   final Map<CalendarType, CalendarEngine> _engines = {
-    CalendarType.gregorian: GregorianCalendarEngine(),
-    CalendarType.christian: ChristianCalendarEngine(),
-    CalendarType.islamic: IslamicCalendarEngine(),
-    CalendarType.thirteenMonth: ThirteenMonthCalendarEngine(),
-  };
+  CalendarType.gregorian: GregorianCalendarEngine(),
+  CalendarType.christian: ChristianCalendarEngine(),
+  CalendarType.islamic: IslamicCalendarEngine(),
+  CalendarType.thirteenMonth: ThirteenMonthCalendarEngine(),
+};
 
   final Map<CalendarType, int> _selectedMonthIndex = {
     CalendarType.gregorian: 0,
@@ -577,6 +577,12 @@ Future<void> deleteEntry(String id) async {
     }).toList();
   }
 }
+
+
+
+
+
+
 
 
 

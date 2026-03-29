@@ -1,7 +1,6 @@
 enum CalendarType {
   gregorian,
-  christian,
-  islamic,
+  christian,islamic,
   thirteenMonth,
 }
 
@@ -32,3 +31,5 @@ extension CalendarTypeExtension on CalendarType {
     }
   }
 }
+
+
