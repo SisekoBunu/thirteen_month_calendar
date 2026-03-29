@@ -698,10 +698,8 @@ recurrenceSummaryBuilder: (entry) =>
   }
 
   static String _headerSubtitle(String displayName) {
-    if (displayName == 'Christian (Ussher Chronology)') return 'Christian';
-    if (displayName == 'Islamic (Hijri)') return 'Islamic';
-    return displayName;
-  }
+  return displayName;
+}
 
   static String _startupCardSubtitle(String displayName) {
     if (displayName == 'Gregorian') {
@@ -1317,6 +1315,7 @@ class _StartupCalendarCard extends StatelessWidget {
     );
   }
 }
+
 
 
 
