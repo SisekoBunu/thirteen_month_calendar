@@ -6,9 +6,14 @@ class IslamicCalendarEngine implements CalendarEngine {
   IslamicCalendarEngine() {
     final today = DateTime.now();
     final h = _fromGregorian(today);
-    _year = h[0];
-    _month = h[1];
-    _day = h[2];
+
+    _todayYear = h[0];
+    _todayMonth = h[1];
+    _todayDay = h[2];
+
+    _year = _todayYear;
+    _month = _todayMonth;
+    _day = _todayDay;
   }
 
   List<int> _fromGregorian(DateTime date) {
@@ -55,6 +60,9 @@ class IslamicCalendarEngine implements CalendarEngine {
 
 
   int _year = 1447;
+  late final int _todayYear;
+  late final int _todayMonth;
+  late final int _todayDay;
   int _month = 1;
   int _day = 1;
 
@@ -68,7 +76,9 @@ class IslamicCalendarEngine implements CalendarEngine {
   DateTime get selectedGregorianDate => DateTime.now(); // unused
 
   @override
-  void selectGregorianDate(DateTime date) {}
+  void selectGregorianDate(DateTime date) {
+    // locked for Hijri
+  }
 
   @override
   void selectCalendarDate({
@@ -117,10 +127,10 @@ class IslamicCalendarEngine implements CalendarEngine {
   int getSelectedDay() => _day;
 
   @override
-  int getTodayMonthIndex() => _month - 1;
+  int getTodayMonthIndex() => _todayMonth - 1;
 
   @override
-  int getTodayDay() => _day;
+  int getTodayDay() => _todayDay;
 
   static const List<String> _months = [
     "Muharram",
@@ -179,6 +189,7 @@ class IslamicCalendarEngine implements CalendarEngine {
     return const [];
   }
 }
+
 
 
 
