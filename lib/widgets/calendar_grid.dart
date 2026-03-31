@@ -65,18 +65,25 @@ class CalendarGrid extends StatelessWidget {
                 final isSelected = selectedDay == day;
                 final isPreview = previewDay == day;
                 final isToday = todayDay == day;
+                final isFriday = (index % 7) == 4;
 
                 Color backgroundColor = Colors.white;
                 Color borderColor = Colors.grey.shade300;
                 Color textColor = Colors.black87;
                 FontWeight fontWeight = FontWeight.w500;
 
-                if (isSelected) {
+                if (isFriday && !isSelected) {
+                  textColor = Colors.green.shade700;
+                }
+
+                if (isSelected)
+                 {
                   backgroundColor = Colors.black87;
                   borderColor = Colors.black87;
                   textColor = Colors.white;
                   fontWeight = FontWeight.w700;
-                } else if (isPreview || isToday) {
+                } else if (isPreview || isToday)
+                 {
                   backgroundColor = Colors.grey.shade200;
                   borderColor = Colors.grey.shade500;
                   textColor = Colors.black87;
@@ -119,3 +126,4 @@ class CalendarGrid extends StatelessWidget {
     );
   }
 }
+

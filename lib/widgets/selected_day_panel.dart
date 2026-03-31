@@ -67,42 +67,85 @@ class SelectedDayPanel extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 6),
+            Text(
+              " , ",
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 12),
 
-            
-            const SizedBox(height: 10),
+            if (holidays.isNotEmpty) ...[
+              const Text(
+                "Observances",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              ...holidays.map(
+                (item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text("• "),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+
+            if (timelineEvents.isNotEmpty) ...[
+              const Text(
+                "Timeline / Religious Notes",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              ...timelineEvents.map(
+                (item) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text("• "),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+
+            const Text(
+              "Your Entries",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
 
             if (entries.isEmpty)
               const Text("No entries yet")
             else
-              ...entries.map((e) => ListTile(
-                    title: Text(e.title),
-subtitle: Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [
-    if (e.timeLabel.isNotEmpty) Text(e.timeLabel),
-    if (e.details.isNotEmpty) Text(e.details),
-    Text(recurrenceSummaryBuilder(e)),
-  ],
-),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () => onDeleteEntry(e),
-                    ),
-                  )),
+              ...entries.map(
+                (e) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(e.title),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (e.timeLabel.isNotEmpty) Text(e.timeLabel),
+                      if (e.details.isNotEmpty) Text(e.details),
+                      Text(recurrenceSummaryBuilder(e)),
+                    ],
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () => onEditEntry(e),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () => onDeleteEntry(e),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 }
-
-
-
-
-
-
-
-
-
-
-

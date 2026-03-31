@@ -1,14 +1,14 @@
 class IslamicTimelineEvent {
   final String name;
-  final int gregorianMonth;
-  final int gregorianDay;
+  final int month;
+  final int day;
   final String accuracyLabel;
   final String category;
 
   const IslamicTimelineEvent({
     required this.name,
-    required this.gregorianMonth,
-    required this.gregorianDay,
+    required this.month,
+    required this.day,
     required this.accuracyLabel,
     required this.category,
   });
@@ -16,94 +16,54 @@ class IslamicTimelineEvent {
 
 class IslamicTimelineService {
   static const List<IslamicTimelineEvent> timelineEvents = [
-
     IslamicTimelineEvent(
-      name: "Creation of Adam",
-      gregorianMonth: 4,
-      gregorianDay: 1,
-      accuracyLabel: "traditional",
-      category: "Islamic timeline",
-    ),
-
-    IslamicTimelineEvent(
-      name: "Hawwa (Eve)",
-      gregorianMonth: 4,
-      gregorianDay: 2,
-      accuracyLabel: "traditional",
-      category: "Islamic timeline",
-    ),
-
-    IslamicTimelineEvent(
-      name: "Nuh and the Flood",
-      gregorianMonth: 11,
-      gregorianDay: 17,
-      accuracyLabel: "approx.",
-      category: "Islamic timeline",
-    ),
-
-    IslamicTimelineEvent(
-      name: "Ibrahim and the Kaaba",
-      gregorianMonth: 10,
-      gregorianDay: 1,
-      accuracyLabel: "approx.",
-      category: "Islamic timeline",
-    ),
-
-    IslamicTimelineEvent(
-      name: "Musa and Pharaoh",
-      gregorianMonth: 3,
-      gregorianDay: 1,
-      accuracyLabel: "approx.",
-      category: "Islamic timeline",
-    ),
-
-    IslamicTimelineEvent(
-      name: "Isa as Prophet",
-      gregorianMonth: 12,
-      gregorianDay: 25,
-      accuracyLabel: "traditional",
-      category: "Islamic timeline",
-    ),
-
-    IslamicTimelineEvent(
-      name: "Birth of Prophet Muhammad",
-      gregorianMonth: 4,
-      gregorianDay: 22,
-      accuracyLabel: "traditional",
-      category: "Islamic timeline",
-    ),
-
-    IslamicTimelineEvent(
-      name: "First Revelation",
-      gregorianMonth: 8,
-      gregorianDay: 10,
-      accuracyLabel: "approx.",
-      category: "Islamic timeline",
-    ),
-
-    IslamicTimelineEvent(
-      name: "Hijra to Medina",
-      gregorianMonth: 7,
-      gregorianDay: 16,
+      name: "Hijra to Madinah",
+      month: 1,
+      day: 1,
       accuracyLabel: "historical",
       category: "Islamic timeline",
     ),
-
     IslamicTimelineEvent(
-      name: "Conquest of Mecca",
-      gregorianMonth: 1,
-      gregorianDay: 11,
-      accuracyLabel: "historical",
-      category: "Islamic timeline",
+      name: "Ashura",
+      month: 1,
+      day: 10,
+      accuracyLabel: "traditional",
+      category: "Islamic observance",
     ),
-
     IslamicTimelineEvent(
-      name: "Death of Prophet Muhammad",
-      gregorianMonth: 6,
-      gregorianDay: 8,
-      accuracyLabel: "historical",
-      category: "Islamic timeline",
+      name: "Mawlid al-Nabi",
+      month: 3,
+      day: 12,
+      accuracyLabel: "traditional",
+      category: "Islamic observance",
     ),
-
+    IslamicTimelineEvent(
+      name: "Laylat al-Barat",
+      month: 8,
+      day: 15,
+      accuracyLabel: "traditional",
+      category: "Islamic observance",
+    ),
+    IslamicTimelineEvent(
+      name: "Laylat al-Qadr",
+      month: 9,
+      day: 27,
+      accuracyLabel: "traditional",
+      category: "Islamic observance",
+    ),
+    IslamicTimelineEvent(
+      name: "Hajj Days",
+      month: 12,
+      day: 8,
+      accuracyLabel: "religious",
+      category: "Islamic observance",
+    ),
+    IslamicTimelineEvent(
+      name: "Day of Arafah",
+      month: 12,
+      day: 9,
+      accuracyLabel: "religious",
+      category: "Islamic observance",
+    ),
   ];
 }
