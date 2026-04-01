@@ -1,3 +1,4 @@
+import 'jewish_calendar_engine.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -27,13 +28,18 @@ class CalendarManager extends ChangeNotifier {
   CalendarType.christian: ChristianCalendarEngine(),
   CalendarType.islamic: IslamicCalendarEngine(),
   CalendarType.thirteenMonth: ThirteenMonthCalendarEngine(),
-};
+  CalendarType.jewish: JewishCalendarEngine(),
+
+  };
 
   final Map<CalendarType, int> _selectedMonthIndex = {
     CalendarType.gregorian: 0,
     CalendarType.christian: 0,
     CalendarType.islamic: 0,
     CalendarType.thirteenMonth: 0,
+    CalendarType.jewish: 0,
+  
+  
   };
 
   final Map<CalendarType, int?> _selectedDay = {
@@ -41,6 +47,9 @@ class CalendarManager extends ChangeNotifier {
     CalendarType.christian: null,
     CalendarType.islamic: null,
     CalendarType.thirteenMonth: null,
+    CalendarType.jewish: null,
+  
+  
   };
 
   final Map<String, List<CalendarEntry>> entriesByDate = {};
@@ -488,6 +497,7 @@ Future<void> deleteEntry(String id) async {
 
   CalendarType _calendarTypeFromCulture(String culture) {
     switch (culture) {
+      case 'Jewish (Hebrew)': return CalendarType.gregorian;
       case 'Gregorian':
         return CalendarType.gregorian;
       case 'Christian (Ussher Chronology)':
@@ -496,8 +506,8 @@ Future<void> deleteEntry(String id) async {
         return CalendarType.islamic;
       case '13-Month Calendar':
         return CalendarType.thirteenMonth;
-      default:
-        return CalendarType.gregorian;
+      case 'Jewish (Hebrew)': return CalendarType.jewish;
+      default: return CalendarType.gregorian;
     }
   }
 
@@ -526,7 +536,10 @@ Future<void> deleteEntry(String id) async {
         return 'islamic';
       case CalendarType.thirteenMonth:
         return 'thirteenMonth';
-    }
+    
+  
+      case CalendarType.jewish:
+        return 'jewish';}
   }
 
   
@@ -577,6 +590,9 @@ Future<void> deleteEntry(String id) async {
     }).toList();
   }
 }
+
+
+
 
 
 
