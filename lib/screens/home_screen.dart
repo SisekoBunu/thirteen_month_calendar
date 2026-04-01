@@ -308,6 +308,14 @@ recurrenceSummaryBuilder: (entry) =>
     switch (_viewMode) {
       case CalendarViewMode.year:
         return YearOverviewGrid(
+        hasEntry: (monthIndex, day) {
+          return manager.getEntriesForDate(
+            culture: engine.displayName,
+            year: panelYear,
+            monthIndex: monthIndex,
+            day: day,
+          ).isNotEmpty;
+        },
           startOffsetBuilder: engine is ThirteenMonthCalendarEngine ? (monthIndex) => 0 : null,
           monthNames: months,
           daysInMonth: (monthIndex) =>
@@ -1317,6 +1325,10 @@ class _StartupCalendarCard extends StatelessWidget {
     );
   }
 }
+
+
+
+
 
 
 

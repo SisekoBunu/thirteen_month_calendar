@@ -11,6 +11,7 @@ class YearOverviewGrid extends StatelessWidget {
   final int Function(int monthIndex)? startOffsetBuilder;
   final ValueChanged<int> onMonthTap;
   final void Function(int monthIndex, int day) onDayTap;
+  final bool Function(int monthIndex, int day)? hasEntry;
 
   const YearOverviewGrid({
     super.key,
@@ -24,6 +25,7 @@ class YearOverviewGrid extends StatelessWidget {
     required this.onMonthTap,
     required this.onDayTap,
     this.startOffsetBuilder,
+    this.hasEntry,
   });
 
   @override
@@ -143,6 +145,9 @@ class YearOverviewGrid extends StatelessWidget {
                               todayMonthIndex == monthIndex &&
                               todayDay == day;
 
+                          final showMarker =
+                              hasEntry != null && hasEntry!(monthIndex, day);
+
                           Color backgroundColor = Colors.transparent;
                           Color textColor = Colors.black87;
                           FontWeight fontWeight = FontWeight.w500;
@@ -160,21 +165,38 @@ class YearOverviewGrid extends StatelessWidget {
                           return InkWell(
                             borderRadius: BorderRadius.circular(10),
                             onTap: () => onDayTap(monthIndex, day),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: backgroundColor,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '$day',
-                                  style: TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: fontWeight,
-                                    color: textColor,
+                            child: Stack(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: backgroundColor,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '$day',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: fontWeight,
+                                        color: textColor,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                                if (showMarker)
+                                  Positioned(
+                                    bottom: 3,
+                                    right: 3,
+                                    child: Container(
+                                      width: 4,
+                                      height: 4,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.black87,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           );
                         },
