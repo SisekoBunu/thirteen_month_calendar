@@ -8,6 +8,7 @@ class YearOverviewGrid extends StatelessWidget {
   final int? todayDay;
   final bool highlightToday;
   final int Function(int monthIndex) daysInMonth;
+  final int Function(int monthIndex)? startOffsetBuilder;
   final ValueChanged<int> onMonthTap;
   final void Function(int monthIndex, int day) onDayTap;
 
@@ -22,6 +23,7 @@ class YearOverviewGrid extends StatelessWidget {
     required this.highlightToday,
     required this.onMonthTap,
     required this.onDayTap,
+    this.startOffsetBuilder,
   });
 
   @override
@@ -55,7 +57,9 @@ class YearOverviewGrid extends StatelessWidget {
             itemBuilder: (context, monthIndex) {
               final monthDays = daysInMonth(monthIndex);
               final year = DateTime.now().year;
-              final startOffset = DateTime(year, monthIndex + 1, 1).weekday - 1;
+              final startOffset = startOffsetBuilder != null
+                  ? startOffsetBuilder!(monthIndex)
+                  : DateTime(year, monthIndex + 1, 1).weekday - 1;
               final isSelectedMonth = monthIndex == selectedMonthIndex;
 
               return AnimatedContainer(
@@ -127,9 +131,11 @@ class YearOverviewGrid extends StatelessWidget {
                           childAspectRatio: 1,
                         ),
                         itemBuilder: (context, dayIndex) {
-                          if (dayIndex < startOffset) return const SizedBox.shrink();
-                          final day = dayIndex - startOffset + 1;
+                          if (dayIndex < startOffset) {
+                            return const SizedBox.shrink();
+                          }
 
+                          final day = dayIndex - startOffset + 1;
                           final isSelectedDay =
                               isSelectedMonth && selectedDay == day;
 

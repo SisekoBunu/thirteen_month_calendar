@@ -1,27 +1,22 @@
 import '../models/calendar_type.dart';
 import 'calendar_engine.dart';
-import 'calendar_logic.dart';
 
 class ThirteenMonthCalendarEngine implements CalendarEngine {
-  int _year = DateTime.now().year;
+  /// Anchor: 1 April 2026 = Day 1
+  static final DateTime _anchorGregorian = DateTime(2026, 4, 1);
+
+  int _year = 2026;
   int _monthIndex = 0;
   int _day = 1;
 
   static const List<String> months = [
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "Sol",
-    "September",
-    "October",
-    "November",
-    "December",
-    "January",
-    "February",
-    "March"
+    "April","May","June","July","August","Sol",
+    "September","October","November","December",
+    "January","February","March"
   ];
+
+  static const int daysPerMonth = 28;
+  static const int monthsPerYear = 13;
 
   @override
   CalendarType get type => CalendarType.thirteenMonth;
@@ -29,16 +24,30 @@ class ThirteenMonthCalendarEngine implements CalendarEngine {
   @override
   String get displayName => '13-Month Calendar';
 
+  /// ?? TRUE INTERNAL CLOCK (independent)
+  void _syncWithToday() {
+    final today = DateTime.now();
+    final diffDays = today.difference(_anchorGregorian).inDays;
+
+    final totalDays = diffDays < 0 ? 0 : diffDays;
+
+    final totalMonths = totalDays ~/ daysPerMonth;
+    final dayOfMonth = (totalDays % daysPerMonth) + 1;
+
+    final yearOffset = totalMonths ~/ monthsPerYear;
+    final month = totalMonths % monthsPerYear;
+
+    _year = 2026 + yearOffset;
+    _monthIndex = month;
+    _day = dayOfMonth;
+  }
+
   @override
-  DateTime get selectedGregorianDate =>
-      CalendarLogic.convertCustomToGregorianDate(_year, _monthIndex, _day);
+  DateTime get selectedGregorianDate => DateTime.now();
 
   @override
   void selectGregorianDate(DateTime date) {
-    final custom = CalendarLogic.convertGregorianToCustomDate(date);
-    _year = custom.year ?? _year;
-    _monthIndex = custom.monthIndex ?? _monthIndex;
-    _day = custom.day ?? _day;
+    _syncWithToday();
   }
 
   @override
@@ -53,7 +62,7 @@ class ThirteenMonthCalendarEngine implements CalendarEngine {
   @override
   void goToNextMonth() {
     _monthIndex++;
-    if (_monthIndex >= months.length) {
+    if (_monthIndex >= monthsPerYear) {
       _monthIndex = 0;
       _year++;
     }
@@ -63,7 +72,7 @@ class ThirteenMonthCalendarEngine implements CalendarEngine {
   void goToPreviousMonth() {
     _monthIndex--;
     if (_monthIndex < 0) {
-      _monthIndex = months.length - 1;
+      _monthIndex = monthsPerYear - 1;
       _year--;
     }
   }
@@ -95,14 +104,14 @@ class ThirteenMonthCalendarEngine implements CalendarEngine {
 
   @override
   int getTodayMonthIndex() {
-    final custom = CalendarLogic.convertGregorianToCustomDate(DateTime.now());
-    return custom.monthIndex ?? 0;
+    _syncWithToday();
+    return _monthIndex;
   }
 
   @override
   int getTodayDay() {
-    final custom = CalendarLogic.convertGregorianToCustomDate(DateTime.now());
-    return custom.day ?? 1;
+    _syncWithToday();
+    return _day;
   }
 
   @override

@@ -7,6 +7,7 @@ import '../models/calendar_entry.dart';
 import '../models/calendar_type.dart';
 import '../models/calendar_view_mode.dart';
 import '../services/calendar_manager.dart';
+import '../services/thirteen_month_calendar_engine.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/selected_day_panel.dart';
 import '../widgets/entry_editor_dialog.dart';
@@ -307,6 +308,7 @@ recurrenceSummaryBuilder: (entry) =>
     switch (_viewMode) {
       case CalendarViewMode.year:
         return YearOverviewGrid(
+          startOffsetBuilder: engine is ThirteenMonthCalendarEngine ? (monthIndex) => 0 : null,
           monthNames: months,
           daysInMonth: (monthIndex) =>
               engine.getDaysInMonth(monthIndex, engine.getDisplayYear()),
@@ -1315,6 +1317,7 @@ class _StartupCalendarCard extends StatelessWidget {
     );
   }
 }
+
 
 
 
