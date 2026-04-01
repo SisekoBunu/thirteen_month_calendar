@@ -40,6 +40,7 @@ class SelectedDayPanel extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       padding: const EdgeInsets.all(16),
+      constraints: const BoxConstraints(maxHeight: 300),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -48,6 +49,7 @@ class SelectedDayPanel extends StatelessWidget {
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
@@ -67,52 +69,9 @@ class SelectedDayPanel extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-            Text(
-              " , ",
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
-            if (holidays.isNotEmpty) ...[
-              const Text(
-                "Observances",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 6),
-              ...holidays.map(
-                (item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text("• "),
-                ),
-              ),
-              const SizedBox(height: 10),
-            ],
-
-            if (timelineEvents.isNotEmpty) ...[
-              const Text(
-                "Timeline / Religious Notes",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 6),
-              ...timelineEvents.map(
-                (item) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text("• "),
-                ),
-              ),
-              const SizedBox(height: 10),
-            ],
-
-            const Text(
-              "Your Entries",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-
+            /// ONLY USER ENTRIES
             if (entries.isEmpty)
               const Text("No entries yet")
             else
